@@ -3,12 +3,26 @@ import {
   Links,
   Meta,
   Outlet,
+  redirect,
   Scripts,
   ScrollRestoration,
 } from "react-router";
 
+import {
+  MutationCache,
+  QueryCache,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
+
 import type { Route } from "./+types/root";
+import { Toaster } from "~/components/ui/sonner";
+import { toast } from "sonner";
+
 import "./app.css";
+import { supabase } from "./lib/supabase";
+import { useEffect, useState } from "react";
+import { Loader } from "./components/shared/Loader";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -41,8 +55,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError(error) {
+      toast.error(error?.message || "Something went wrong ");
+    },
+  }),
+  mutationCache: new MutationCache({
+    onError(error) {
+      toast.error(error?.message || "Something went wrong ");
+    },
+  }),
+});
+
 export default function App() {
-  return <Outlet />;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Outlet />
+      <Toaster position="top-center" />
+    </QueryClientProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
