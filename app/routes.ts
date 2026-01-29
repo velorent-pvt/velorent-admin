@@ -24,6 +24,7 @@ export default [
     route("models/edit", "routes/brand-models/edit.tsx"),
 
     route("cars", "routes/cars/index.tsx"),
+    route("cars/:id", "routes/cars/review.tsx"),
     route("pending", "routes/pending/index.tsx"),
     route("pending/:id", "routes/pending/review.tsx"),
 

@@ -42,6 +42,47 @@ export async function getPendingCars() {
   return data;
 }
 
+export async function getApprovedCars() {
+  const { data, error } = await supabase
+    .from("cars")
+    .select(
+      `
+        id,
+        registration_number,
+        host:profiles!host_id (
+            id,
+            full_name
+        ),
+        
+        model:car_models!model_id (
+            id,
+            name
+        ),
+
+        image:car_images!car_id (
+            id,
+            image_url,
+            is_primary
+        ),
+
+        location:car_pickup_addresses!car_id (
+            id,
+            city,
+            pincode
+        )
+    `,
+    )
+    .eq("is_verified", true)
+    .eq("image.is_primary", true);
+
+  if (error) {
+    console.log(error);
+    throw error;
+  }
+
+  return data;
+}
+
 type Brand = {
   id: string;
   name: string;
@@ -83,8 +124,10 @@ type Address = {
 };
 
 type Feature = {
-  id: string;
-  feature: string;
+  feature: {
+    id: string;
+    name: string;
+  };
 };
 
 type Image = {
