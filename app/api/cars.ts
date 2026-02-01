@@ -241,44 +241,49 @@ export async function getCarById(car_id: string): Promise<
       body_type: data.body_type,
       rc_valid_till: data.rc_valid_till,
       insurance_valid_till: data.insurance_valid_till,
+      hourly_price: data.hourly_price,
+      commission_percentage: data.commission_percentage,
+      delivery_rate: data.delivery_rate,
+      deposit_amount: data.deposit_amount,
+      delivery_enabled: data.delivery_enabled,
     },
 
     brand: {
-      id: data.brand.id,
-      name: data.brand.name,
+      id: (data.brand as any).id,
+      name: (data.brand as any).name,
     },
 
     model: {
-      id: data.model.id,
-      name: data.model.name,
+      id: (data.model as any).id,
+      name: (data.model as any).name,
     },
 
     address: {
       car_id,
-      address_line1: data.address?.address_line1 ?? "",
-      city: data.address?.city ?? "",
-      state: data.address?.state ?? "",
-      pincode: data.address?.pincode ?? "",
-      latitude: data.address?.latitude ?? null,
-      longitude: data.address?.longitude ?? null,
-      delivery_enabled: data.address.delivery_enabled,
+      address_line1: (data.address as any)?.address_line1 ?? "",
+      city: (data.address as any)?.city ?? "",
+      state: (data.address as any)?.state ?? "",
+      pincode: (data.address as any)?.pincode ?? "",
+      latitude: (data.address as any)?.latitude ?? null,
+      longitude: (data.address as any)?.longitude ?? null,
+      delivery_enabled: (data.address as any)?.delivery_enabled ?? false,
     },
 
-    features: data.features,
+    features: data.features as any,
 
-    images: data.images.map((img) => ({
+    images: (data.images as any[]).map((img) => ({
       car_id,
       image_url: img.image_url,
       is_primary: img.is_primary ?? false,
     })),
 
-    documents: data.documents.map((doc) => ({
+    documents: (data.documents as any[]).map((doc) => ({
       car_id,
       document_url: doc.document_url,
       document_type: doc.document_type,
     })),
 
-    host: data.host,
+    host: data.host as any,
   };
 }
 
@@ -339,6 +344,7 @@ export async function approveCar({
     .from("cars")
     .update({
       is_verified: true,
+      is_active: true,
       hourly_price,
       commission_percentage,
       delivery_rate,
@@ -362,6 +368,7 @@ type VehicleApprovalEmailData = {
   registrationNumber: string;
   pdfUrl: string;
   companyName: string;
+  approvalDate?: string;
 };
 
 type NotifyApprovalPayload = {
@@ -414,4 +421,82 @@ export async function notifyApproval(payload: NotifyApprovalPayload) {
     console.error("notifyApproval error:", error);
     throw error;
   }
+}
+
+export async function rejectCar(carId: string) {
+  const { error } = await supabase.from("cars").delete().eq("id", carId);
+
+  if (error) {
+    console.error("Reject car failed:", error);
+    throw error;
+  }
+}
+
+type VehicleRejectionEmailData = {
+  hostName: string;
+  vehicleName: string;
+  registrationNumber: string;
+  rejectionReason: string;
+  companyName: string;
+  rejectionDate?: string;
+};
+
+type NotifyRejectionPayload = {
+  carId: string;
+  userId: string;
+  message: string;
+  email: {
+    to: string;
+    template: "vehicle-rejected";
+    data: VehicleRejectionEmailData;
+  };
+};
+
+export async function notifyRejection(payload: NotifyRejectionPayload) {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/notify`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        carId: payload.carId,
+        type: "Car Rejected",
+        title: "Your vehicle registration was rejected",
+        message: payload.message, 
+        userId: payload.userId,
+        email: {
+          ...payload.email,
+          data: {
+            ...payload.email.data,
+            rejectionDate: getTodayDate(), 
+          },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to notify host about rejection");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("notifyRejection error:", error);
+    throw error;
+  }
+}
+
+
+
+export async function getCarAgreement(vehicle_number: string) {
+  if (!vehicle_number) return null;
+
+  const { data, error } = await supabase
+    .from("agreements")
+    .select("*")
+    .eq("vehicle_number", vehicle_number)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
 }

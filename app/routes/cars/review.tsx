@@ -69,7 +69,9 @@ import { Badge } from "~/components/ui/badge";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   approveCar,
+  getCarAgreement,
   getCarById,
+  rejectCar,
 } from "~/api/cars";
 import { useNavigate, useParams } from "react-router";
 import { Loader } from "~/components/shared/Loader";
@@ -129,6 +131,12 @@ export default function CarDetail() {
     "approve",
   );
 
+  const { data: agreement } = useQuery({
+    queryKey: ["agreement", data?.car.registration_number],
+    queryFn: () => getCarAgreement(data?.car.registration_number!),
+    enabled: !!data?.car.registration_number,
+  });
+
   const approveForm = useForm({
     resolver: zodResolver(approveSchema),
     defaultValues: {
@@ -167,6 +175,19 @@ export default function CarDetail() {
       queryClient.invalidateQueries({
         queryKey: ["approved_cars"],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["car", id],
+      });
+      navigate("/cars");
+    },
+  });
+
+  const { mutate: removeCar, status: removeStatus } = useMutation({
+    mutationFn: () => rejectCar(id!),
+    onSuccess() {
+      queryClient.invalidateQueries({
+        queryKey: ["approved_cars"],
+      });
       navigate("/cars");
     },
   });
@@ -178,9 +199,10 @@ export default function CarDetail() {
     });
   }
 
-  function onRejectSubmit() {
-    // Rejection implementation for approved cars?
-    // For now leaving empty as per pending implementation
+  function onRemoveSubmit() {
+    if (confirm("Are you sure you want to remove this car?")) {
+      removeCar();
+    }
   }
 
   if (isLoading) return <Loader />;
@@ -441,19 +463,50 @@ export default function CarDetail() {
             </TabsContent>
             <TabsContent value="agreement" className="mt-6">
               <Card>
-                <CardContent className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600 shrink-0">
-                    <CheckCircle className="h-6 w-6" />
-                  </div>
-
-                  <div>
-                    <h4 className="text-sm font-semibold text-green-700">
-                      Vehicle Approved
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      This vehicle is approved and live on VeloRent.
-                    </p>
-                  </div>
+                <CardContent className="flex items-center gap-4 py-6">
+                  {agreement ? (
+                    <>
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600 shrink-0">
+                        <CheckCircle className="h-6 w-6" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-green-700">
+                          Digital Agreement Available
+                        </h4>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          The host agreement for this vehicle is signed and
+                          available for review.
+                        </p>
+                        <Button asChild variant="outline" size="sm">
+                          <a
+                            href={agreement.pdf_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2"
+                          >
+                            <FileText className="h-4 w-4" />
+                            View Agreement
+                            <ArrowUpRight className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 text-yellow-600 shrink-0">
+                        <FileText className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-yellow-700">
+                          Agreement Pending
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          The digital agreement has not been generated or synced
+                          for this vehicle yet.
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -485,7 +538,7 @@ export default function CarDetail() {
                 <SelectContent>
                   <SelectGroup>
                     <SelectItem value="approve">Update Details</SelectItem>
-                    {/* <SelectItem value="reject">Reject</SelectItem> */}
+                    <SelectItem value="reject">Remove Car</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -504,7 +557,7 @@ export default function CarDetail() {
                       <FormItem>
                         <FormLabel>Hourly Rate</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter hourly rate" {...field} />
+                          <Input placeholder="Enter hourly rate" {...field} value={field.value as any} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -521,6 +574,7 @@ export default function CarDetail() {
                           <Input
                             placeholder="Enter commision rate"
                             {...field}
+                            value={field.value as any}
                           />
                         </FormControl>
                         <FormMessage />
@@ -538,6 +592,7 @@ export default function CarDetail() {
                           <Input
                             placeholder="Enter delivery deposit"
                             {...field}
+                            value={field.value as any}
                           />
                         </FormControl>
                         <FormMessage />
@@ -555,6 +610,7 @@ export default function CarDetail() {
                           <Input
                             placeholder="Enter security deposit"
                             {...field}
+                            value={field.value as any}
                           />
                         </FormControl>
                         <FormMessage />
@@ -574,8 +630,19 @@ export default function CarDetail() {
             )}
 
             {decision === "reject" && (
-              <div className="p-4 bg-muted rounded-md text-sm text-center">
-                Rejection flow not available for approved cars.
+              <div className="space-y-4">
+                <div className="p-4 bg-destructive/10 text-destructive rounded-md text-sm">
+                  Removing this car will permanently delete it from the website
+                  and database. This action cannot be undone.
+                </div>
+                <StatefulButton
+                  status={removeStatus}
+                  onClick={onRemoveSubmit}
+                  variant="destructive"
+                  className="w-full"
+                >
+                  Remove Car
+                </StatefulButton>
               </div>
             )}
           </CardContent>

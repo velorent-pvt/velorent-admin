@@ -71,6 +71,8 @@ import {
   generateHostAgreement,
   getCarById,
   notifyApproval,
+  notifyRejection,
+  rejectCar,
 } from "~/api/cars";
 import { useNavigate, useParams } from "react-router";
 import { Loader } from "~/components/shared/Loader";
@@ -122,7 +124,7 @@ export default function CarDetail() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["car", id],
-    queryFn: () => getCarById(id),
+    queryFn: () => getCarById(id!),
     enabled: !!id,
   });
 
@@ -156,23 +158,23 @@ export default function CarDetail() {
       if (!data) return;
 
       const pdf = await generateHostAgreement({
-        host_name: data.host.full_name,
-        vehicle_number: data.car.registration_number,
+        host_name: data.host.full_name ?? "",
+        vehicle_number: data.car.registration_number ?? "",
         host_sign:
           data.documents.find((d) => d.document_type === "sign")
             ?.document_url ?? "",
       });
 
       await notifyApproval({
-        carId: id,
-        userId: data.host.id,
+        carId: id!,
+        userId: data.host.id ?? "",
         email: {
-          to: data.host.email,
+          to: data.host.email ?? "",
           template: "vehicle-verified",
           data: {
-            hostName: data.host.full_name,
+            hostName: data.host.full_name ?? "",
             vehicleName: `${data.brand.name} ${data.model.name}`,
-            registrationNumber: data.car.registration_number,
+            registrationNumber: data.car.registration_number ?? "",
             approvalDate: new Date().toLocaleDateString("en-IN", {
               day: "2-digit",
               month: "short",
@@ -192,14 +194,63 @@ export default function CarDetail() {
     },
   });
 
-  function onApproveSubmit(data) {
+  const { mutate: reject, status: rejectStatus } = useMutation({
+    mutationFn: async ({
+      carId,
+      message,
+      userId,
+    }: {
+      carId: string;
+      message: string;
+      userId: string;
+    }) => {
+      if (!data) return;
+
+      await notifyRejection({
+        carId,
+        userId,
+        message: `Your vehicle registration was rejected. Reason: ${message}`,
+        email: {
+          to: data.host.email ?? "",
+          template: "vehicle-rejected",
+          data: {
+            hostName: data.host.full_name ?? "",
+            vehicleName: `${data.brand.name} ${data.model.name}`,
+            registrationNumber: data.car.registration_number ?? "",
+            rejectionReason: message,
+            companyName: "Velorent",
+          },
+        },
+      });
+
+      await rejectCar(carId);
+    },
+
+    onSuccess() {
+      queryClient.invalidateQueries({
+        queryKey: ["pending"],
+      });
+
+      navigate("/pending");
+    },
+  });
+
+  function onApproveSubmit(data: any) {
     approve({
-      carId: id,
+      carId: id!,
       ...data,
     });
   }
 
-  function onRejectSubmit() {}
+  function onRejectSubmit(values: z.infer<typeof rejectSchema>) {
+    if (!values.reason || !data) return;
+
+    reject({
+      carId: id!,
+      message: values.reason,
+      userId: data.host.id ?? "",
+    });
+  }
 
   if (isLoading) return <Loader />;
 
@@ -400,7 +451,7 @@ export default function CarDetail() {
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
                     <div className="flex items-center gap-4">
                       <Avatar className="h-14 w-14">
-                        <AvatarImage src={data?.host.avatar_url} alt="Host" />
+                        <AvatarImage src={data?.host.avatar_url ?? undefined} alt="Host" />
                         <AvatarFallback>RS</AvatarFallback>
                       </Avatar>
 
@@ -523,7 +574,7 @@ export default function CarDetail() {
                       <FormItem>
                         <FormLabel>Hourly Rate</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter hourly rate" {...field} />
+                          <Input placeholder="Enter hourly rate" {...field} value={field.value as any} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -540,6 +591,7 @@ export default function CarDetail() {
                           <Input
                             placeholder="Enter commision rate"
                             {...field}
+                            value={field.value as any}
                           />
                         </FormControl>
                         <FormMessage />
@@ -557,6 +609,7 @@ export default function CarDetail() {
                           <Input
                             placeholder="Enter delivery deposit"
                             {...field}
+                            value={field.value as any}
                           />
                         </FormControl>
                         <FormMessage />
@@ -574,6 +627,7 @@ export default function CarDetail() {
                           <Input
                             placeholder="Enter security deposit"
                             {...field}
+                            value={field.value as any}
                           />
                         </FormControl>
                         <FormMessage />
@@ -616,13 +670,14 @@ export default function CarDetail() {
                     )}
                   />
 
-                  <Button
+                  <StatefulButton
+                    status={rejectStatus}
                     type="submit"
                     variant="destructive"
                     className="w-full"
                   >
                     Reject
-                  </Button>
+                  </StatefulButton>
                 </form>
               </Form>
             )}
