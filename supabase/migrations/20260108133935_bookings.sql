@@ -29,6 +29,7 @@ create table bookings (
   total_amount numeric(10,2) not null,
 
   pickup_type text not null default 'self_pickup',
+  delivery_address text,
 
   status text not null default 'pending',
 
@@ -40,7 +41,7 @@ create table bookings (
 
   constraint booking_status_check
     check (
-      status in ('pending','confirmed','cancelled','ongoing','completed')
+      status in ('pending','confirmed','cancelled','rejected','ongoing','completed')
     ),
 
   constraint pickup_type_check

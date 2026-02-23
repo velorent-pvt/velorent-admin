@@ -93,15 +93,27 @@ const tabTriggerClass =
 
 const DOCUMENTS = [
   {
-    key: "rc_book",
-    title: "RC Book",
-    desc: "Vehicle registration certificate",
+    key: "rc_front",
+    title: "RC Front",
+    desc: "Registration certificate (front side)",
     icon: FileText,
   },
   {
-    key: "owner_aadhaar",
-    title: "Owner Aadhaar",
-    desc: "Identity verification document",
+    key: "rc_back",
+    title: "RC Back",
+    desc: "Registration certificate (back side)",
+    icon: FileText,
+  },
+  {
+    key: "aadhaar_front",
+    title: "Aadhaar Front",
+    desc: "Identity document (front side)",
+    icon: IdCard,
+  },
+  {
+    key: "aadhaar_back",
+    title: "Aadhaar Back",
+    desc: "Identity document (back side)",
     icon: IdCard,
   },
   {
@@ -207,8 +219,20 @@ export default function CarDetail() {
 
   if (isLoading) return <Loader />;
 
-  const getDoc = (type: string) =>
-    data?.documents?.find((d) => d.document_type === type);
+  const getDoc = (type: string) => {
+    const doc = data?.documents?.find((d) => d.document_type === type);
+    if (doc) return doc;
+
+    if (type === "rc_front") {
+      return data?.documents?.find((d) => d.document_type === "rc_book");
+    }
+
+    if (type === "aadhaar_front") {
+      return data?.documents?.find((d) => d.document_type === "owner_aadhaar");
+    }
+
+    return undefined;
+  };
 
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-6 p-4 md:p-6 my-12">

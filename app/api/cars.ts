@@ -139,7 +139,14 @@ type Image = {
 type Document = {
   car_id: string;
   document_url: string;
-  document_type: "rc_book" | "owner_aadhaar" | "sign";
+  document_type:
+    | "rc_front"
+    | "rc_back"
+    | "aadhaar_front"
+    | "aadhaar_back"
+    | "sign"
+    | "rc_book"
+    | "owner_aadhaar";
 };
 
 type Payload = {
