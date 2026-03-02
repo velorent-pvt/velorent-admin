@@ -67,9 +67,7 @@ export const hostColumns: ColumnDef<Host>[] = [
     accessorKey: "phone",
     header: "Phone",
     cell: ({ row }) => (
-      <span className="text-muted-foreground">
-        +{row.original.phone || "—"}
-      </span>
+      <span className="text-muted-foreground">{row.original.phone || "—"}</span>
     ),
   },
 
