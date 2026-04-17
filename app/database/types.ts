@@ -135,7 +135,7 @@ export type Database = {
             foreignKeyName: "bookings_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: false
-            referencedRelation: "hosts"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -214,7 +214,6 @@ export type Database = {
           id: string
           updated_at: string | null
           verified: boolean | null
-          verified_at: string | null
         }
         Insert: {
           car_id: string
@@ -224,7 +223,6 @@ export type Database = {
           id?: string
           updated_at?: string | null
           verified?: boolean | null
-          verified_at?: string | null
         }
         Update: {
           car_id?: string
@@ -234,7 +232,6 @@ export type Database = {
           id?: string
           updated_at?: string | null
           verified?: boolean | null
-          verified_at?: string | null
         }
         Relationships: [
           {
@@ -550,7 +547,7 @@ export type Database = {
             foreignKeyName: "cars_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: false
-            referencedRelation: "hosts"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -639,25 +636,31 @@ export type Database = {
       }
       customers: {
         Row: {
+          aadhaar_name: string | null
+          aadhaar_number: string | null
           created_at: string | null
+          dl_name: string | null
+          dl_number: string | null
           id: string
           updated_at: string | null
-          verification_status: string | null
-          verified_at: string | null
         }
         Insert: {
+          aadhaar_name?: string | null
+          aadhaar_number?: string | null
           created_at?: string | null
+          dl_name?: string | null
+          dl_number?: string | null
           id: string
           updated_at?: string | null
-          verification_status?: string | null
-          verified_at?: string | null
         }
         Update: {
+          aadhaar_name?: string | null
+          aadhaar_number?: string | null
           created_at?: string | null
+          dl_name?: string | null
+          dl_number?: string | null
           id?: string
           updated_at?: string | null
-          verification_status?: string | null
-          verified_at?: string | null
         }
         Relationships: [
           {
@@ -964,3 +967,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+

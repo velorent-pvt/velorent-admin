@@ -16,7 +16,7 @@ export function CustomerList() {
     <DataTable
       data={customers}
       columns={customerColumns}
-      searchColumn="name"
+      searchColumn="full_name"
       searchPlaceholder="Search customer..."
       title="Customers"
     />
