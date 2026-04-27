@@ -32,6 +32,9 @@ export default [
     route("hosts", "routes/hosts/index.tsx"),
 
     route("bookings", "routes/bookings/index.tsx"),
+    route("bookings/:id", "routes/bookings/detail.tsx"),
+    route("disputes", "routes/disputes/index.tsx"),
+    route("disputes/:id", "routes/disputes/detail.tsx"),
     route("payments", "routes/payments/index.tsx"),
 
     route("coupons", "routes/coupons/index.tsx"),

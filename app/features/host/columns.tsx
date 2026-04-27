@@ -34,7 +34,6 @@ export const hostColumns: ColumnDef<Host>[] = [
     enableSorting: false,
     enableHiding: false,
   },
-
   {
     id: "avatar",
     header: "Avatar",
@@ -46,31 +45,27 @@ export const hostColumns: ColumnDef<Host>[] = [
       />
     ),
   },
-
   {
     accessorKey: "full_name",
     header: "Name",
     cell: ({ row }) => (
-      <span className="font-medium">{row.original.full_name || "—"}</span>
+      <span className="font-medium">{row.original.full_name || "-"}</span>
     ),
   },
-
   {
     accessorKey: "email",
     header: "Email",
     cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.email || "—"}</span>
+      <span className="text-muted-foreground">{row.original.email || "-"}</span>
     ),
   },
-
   {
     accessorKey: "phone",
     header: "Phone",
     cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.phone || "—"}</span>
+      <span className="text-muted-foreground">{row.original.phone || "-"}</span>
     ),
   },
-
   {
     accessorKey: "created_at",
     header: "Joined On",
