@@ -1,5 +1,8 @@
 import { supabase } from "~/lib/supabase";
 
+const ROLE_HOST = 2;
+const ROLE_CUSTOMER = 3;
+
 export async function getAllCustomers() {
   const { data, error } = await supabase
     .from("profiles")
@@ -20,8 +23,8 @@ export async function getAllCustomers() {
       )
     `
     )
-    .eq("role_id", 3)
-    .order("full_name", { ascending: true });
+    .eq("role_id", ROLE_CUSTOMER)
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
 
@@ -48,8 +51,8 @@ export async function getAllHosts() {
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
-    .eq("role_id", 2)
-    .order("full_name", { ascending: true });
+    .eq("role_id", ROLE_HOST)
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
 

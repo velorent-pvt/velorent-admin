@@ -9,7 +9,7 @@ import {
   Route,
   User,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
   getBookingByIdAdmin,
@@ -28,9 +28,18 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+import { Input } from "~/components/ui/input";
 import { toast } from "sonner";
 
 const BOOKING_STATUSES = [
+  "approved",
   "pending",
   "confirmed",
   "ongoing",
@@ -76,7 +85,7 @@ function statusVariant(
   status: string,
 ): "default" | "secondary" | "destructive" | "outline" | "success" {
   const normalized = status.toLowerCase();
-  if (["confirmed", "ongoing", "completed", "paid", "refunded"].includes(normalized)) {
+  if (["approved", "confirmed", "ongoing", "completed", "paid", "refunded"].includes(normalized)) {
     return "success";
   }
   if (["cancelled", "rejected", "failed", "forfeited"].includes(normalized)) {
@@ -90,9 +99,9 @@ function statusVariant(
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-2">
+    <div className="flex flex-col gap-1 py-3 md:flex-row md:items-start md:justify-between md:gap-4">
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium text-right">{value}</p>
+      <p className="text-sm font-medium md:text-right">{value}</p>
     </div>
   );
 }
@@ -162,7 +171,7 @@ export default function BookingDetailPage() {
   });
 
   const { mutate: markPaymentRefunded, isPending: isMarkingPaymentRefunded } = useMutation({
-    mutationFn: () => markBookingPaymentRefundedAdmin(id!),
+    mutationFn: (refundAmount?: number) => markBookingPaymentRefundedAdmin(id!, refundAmount),
     onSuccess: () => {
       toast.success("Payment marked as refunded");
       refreshQueries();
@@ -173,23 +182,22 @@ export default function BookingDetailPage() {
   const isMutating =
     isUpdatingBookingStatus || isUpdatingDepositStatus || isMarkingPaymentRefunded;
 
-  const statusActions = useMemo(
-    () =>
-      BOOKING_STATUSES.filter((status) => status !== booking?.status).map((status) => ({
-        label: humanize(status),
-        value: status,
-      })),
-    [booking?.status],
-  );
+  const [selectedBookingStatus, setSelectedBookingStatus] = useState<string>("");
+  const [selectedDepositStatus, setSelectedDepositStatus] = useState<string>("");
+  const [refundAmount, setRefundAmount] = useState<string>("");
 
-  const depositActions = useMemo(
-    () =>
-      DEPOSIT_STATUSES.filter((status) => status !== booking?.deposit_status).map((status) => ({
-        label: humanize(status),
-        value: status,
-      })),
-    [booking?.deposit_status],
-  );
+  useEffect(() => {
+    if (!booking) return;
+    setSelectedBookingStatus(booking.status);
+    setSelectedDepositStatus(booking.deposit_status);
+    setRefundAmount(String(booking.deposit_amount ?? ""));
+  }, [booking]);
+
+  const parsedRefundAmount = Number(refundAmount);
+  const isRefundAmountValid =
+    refundAmount.trim().length > 0 &&
+    Number.isFinite(parsedRefundAmount) &&
+    parsedRefundAmount >= 0;
 
   if (!id) {
     return <div className="max-w-7xl mx-auto p-6">Invalid booking id</div>;
@@ -237,7 +245,7 @@ export default function BookingDetailPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-2xl">Booking #{booking.booking_code}</CardTitle>
           <CardDescription>
-            {booking.car_name} • {booking.registration_number} • Created {booking.created_at ? formatDate(booking.created_at) : "-"}
+            {booking.car_name} - {booking.registration_number} - Created {booking.created_at ? formatDate(booking.created_at) : "-"}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -334,65 +342,114 @@ export default function BookingDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <Card className="sticky top-4">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-base">Admin Actions</CardTitle>
+              <CardTitle className="text-base">Booking Status</CardTitle>
               <CardDescription>
-                Update booking/deposit states and mark refund progress.
+                Update the booking lifecycle status.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <p className="text-sm font-semibold mb-2">Set Booking Status</p>
-                <div className="flex flex-wrap gap-2">
-                  {statusActions.map((action) => (
-                    <Button
-                      key={action.value}
-                      variant="outline"
-                      size="sm"
-                      disabled={isMutating}
-                      onClick={() => updateBookingStatus(action.value)}
-                    >
-                      {action.label}
-                    </Button>
+            <CardContent>
+              <Select
+                value={selectedBookingStatus}
+                onValueChange={setSelectedBookingStatus}
+              >
+                <SelectTrigger className="w-full bg-card">
+                  <SelectValue placeholder="Select booking status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BOOKING_STATUSES.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {humanize(status)}
+                    </SelectItem>
                   ))}
-                </div>
-              </div>
-
-              <Separator />
-
-              <div>
-                <p className="text-sm font-semibold mb-2">Set Deposit Status</p>
-                <div className="flex flex-wrap gap-2">
-                  {depositActions.map((action) => (
-                    <Button
-                      key={action.value}
-                      variant="outline"
-                      size="sm"
-                      disabled={isMutating}
-                      onClick={() => updateDepositStatus(action.value)}
-                    >
-                      {action.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <Separator />
-
-              <div>
-                <p className="text-sm font-semibold mb-2">Refund Marker</p>
-                <Button
-                  size="sm"
-                  disabled={isMutating || booking.payment_status === "refunded"}
-                  onClick={() => markPaymentRefunded()}
-                >
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Mark Payment Refunded
-                </Button>
-              </div>
+                </SelectContent>
+              </Select>
+              <Button
+                className="mt-3 w-full"
+                size="sm"
+                disabled={
+                  isMutating ||
+                  !selectedBookingStatus ||
+                  selectedBookingStatus === booking.status
+                }
+                onClick={() => updateBookingStatus(selectedBookingStatus)}
+              >
+                Update Status
+              </Button>
             </CardContent>
           </Card>
+
+          {booking.status === "completed" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Deposit & Refund</CardTitle>
+                <CardDescription>
+                  Manage deposit status and process refund amount.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-sm font-semibold mb-2">Deposit Status</p>
+                  <Select
+                    value={selectedDepositStatus}
+                    onValueChange={setSelectedDepositStatus}
+                  >
+                    <SelectTrigger className="w-full bg-card">
+                      <SelectValue placeholder="Select deposit status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEPOSIT_STATUSES.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {humanize(status)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    className="mt-3 w-full"
+                    size="sm"
+                    variant="outline"
+                    disabled={
+                      isMutating ||
+                      !selectedDepositStatus ||
+                      selectedDepositStatus === booking.deposit_status
+                    }
+                    onClick={() => updateDepositStatus(selectedDepositStatus)}
+                  >
+                    Update Deposit
+                  </Button>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <p className="text-sm font-semibold mb-2">Refund Amount (INR)</p>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)}
+                    placeholder="Enter refund amount"
+                  />
+                  <Button
+                    className="mt-3 w-full"
+                    size="sm"
+                    disabled={
+                      isMutating ||
+                      booking.payment_status === "refunded" ||
+                      !isRefundAmountValid
+                    }
+                    onClick={() => markPaymentRefunded(parsedRefundAmount)}
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refund Amount
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

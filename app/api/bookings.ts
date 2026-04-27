@@ -33,6 +33,7 @@ export type AdminBookingDetail = AdminBooking & {
 };
 
 const BOOKING_STATUSES = [
+  "approved",
   "pending",
   "confirmed",
   "ongoing",
@@ -234,7 +235,7 @@ export async function updateDepositStatusAdmin(bookingId: string, depositStatus:
   if (error) throw error;
 }
 
-export async function markBookingPaymentRefundedAdmin(bookingId: string) {
+export async function markBookingPaymentRefundedAdmin(bookingId: string, refundAmount?: number) {
   const { data: latestPayment, error: fetchError } = await supabase
     .from("payments")
     .select("id")
@@ -246,9 +247,19 @@ export async function markBookingPaymentRefundedAdmin(bookingId: string) {
   if (fetchError) throw fetchError;
   if (!latestPayment?.id) throw new Error("No payment found for this booking");
 
+  const payload: Record<string, unknown> = {
+    status: "refunded",
+    updated_at: new Date().toISOString(),
+  };
+
+  if (typeof refundAmount === "number" && Number.isFinite(refundAmount)) {
+    if (refundAmount < 0) throw new Error("Refund amount cannot be negative");
+    payload.amount = refundAmount;
+  }
+
   const { error } = await supabase
     .from("payments")
-    .update({ status: "refunded", updated_at: new Date().toISOString() })
+    .update(payload)
     .eq("id", latestPayment.id);
 
   if (error) throw error;

@@ -6,7 +6,7 @@ interface StatsCardProps {
   icon: LucideIcon;
   label: string;
   value: string | number;
-  change: string;
+  change?: string;
 }
 
 export function StatsCard({
@@ -27,10 +27,12 @@ export function StatsCard({
           <p className="text-sm text-muted-foreground">{label}</p>
         </div>
 
-        <div className="flex items-center gap-1 text-sm text-success">
-          <ArrowUpRight className="h-4 w-4" />
-          {change}
-        </div>
+        {change ? (
+          <div className="flex items-center gap-1 text-sm text-success">
+            <ArrowUpRight className="h-4 w-4" />
+            {change}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

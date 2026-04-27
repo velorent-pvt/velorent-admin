@@ -27,7 +27,7 @@ function formatAmount(value: number) {
 
 function bookingStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" | "success" {
   const normalized = status.toLowerCase();
-  if (normalized === "completed" || normalized === "confirmed" || normalized === "ongoing") return "success";
+  if (normalized === "approved" || normalized === "completed" || normalized === "confirmed" || normalized === "ongoing") return "success";
   if (normalized === "cancelled" || normalized === "rejected") return "destructive";
   if (normalized === "pending") return "secondary";
   return "outline";

@@ -1,65 +1,118 @@
-import { Calendar, Car, Wallet, CarFront } from "lucide-react";
-
-import type { ChartConfig } from "~/components/ui/chart";
+import { Calendar, CarFront, UserRound, Users, Wallet } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getDashboardSummary } from "~/api/dashboard";
+import { Loader } from "~/components/shared/Loader";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { StatsCard } from "~/features/dashboard/stats-card";
 import { Header } from "~/features/dashboard/header";
-import { EarningsSummary } from "~/features/dashboard/earning-summary";
-import { BookingsSummary } from "~/features/dashboard/bookings-summary";
+import { PaymentsSummary } from "~/features/dashboard/payments-summary";
 
-const chartConfig = {
-  earning: {
-    label: "Earning",
-    color: "var(--primary)",
-  },
-} satisfies ChartConfig;
-
-const earnings = [
-  { day: "Mon", Earning: 1200 },
-  { day: "Tue", Earning: 980 },
-  { day: "Wed", Earning: 1600 },
-  { day: "Thu", Earning: 900 },
-  { day: "Fri", Earning: 2000 },
-  { day: "Sat", Earning: 2500 },
-  { day: "Sun", Earning: 1800 },
-];
+function formatAmount(value: number) {
+  return value.toLocaleString("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  });
+}
 
 export default function Home() {
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["admin_dashboard_summary"],
+    queryFn: getDashboardSummary,
+  });
+
+  if (isLoading) return <Loader />;
+
+  if (isError || !data) {
+    return (
+      <div className="max-w-7xl mx-auto flex flex-col gap-6 p-4 md:p-6">
+        <Header />
+        <Card>
+          <CardHeader>
+            <CardTitle>Failed to load dashboard</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            {(error as any)?.message || "Please try again."}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-6 p-4 md:p-6">
       <Header />
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatsCard
-          icon={Wallet}
-          label="Total Revenue"
-          value="78,423"
-          change="15.2%"
+          icon={Users}
+          label="Total Customers"
+          value={data.totals.customers.toLocaleString("en-IN")}
         />
-
+        <StatsCard
+          icon={UserRound}
+          label="Total Hosts"
+          value={data.totals.hosts.toLocaleString("en-IN")}
+        />
         <StatsCard
           icon={Calendar}
-          label="New Booking"
-          value="32,567"
-          change="5.2%"
+          label="Total Bookings"
+          value={data.totals.bookings.toLocaleString("en-IN")}
         />
-
         <StatsCard
-          icon={Car}
-          label="Rented Cars"
-          value="41,411"
-          change="21.2%"
-        />
-
-        <StatsCard
-          icon={CarFront}
-          label="Available Cars"
-          value="28,623"
-          change="7.2%"
+          icon={Wallet}
+          label="Total Payment Volume"
+          value={formatAmount(data.totals.payment_volume)}
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <EarningsSummary />
-        <BookingsSummary />
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle>New in Last {data.new_counts.days} Days</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-2xl border bg-gradient-to-br from-card to-card/70 p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">New Customers</p>
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                  <Users className="h-4 w-4 text-primary" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold mt-3">
+                {data.new_counts.customers.toLocaleString("en-IN")}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Customer signups in this period</p>
+            </div>
+            <div className="rounded-2xl border bg-gradient-to-br from-card to-card/70 p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">New Hosts</p>
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                  <UserRound className="h-4 w-4 text-primary" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold mt-3">
+                {data.new_counts.hosts.toLocaleString("en-IN")}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Host onboarding in this period</p>
+            </div>
+            <div className="rounded-2xl border bg-gradient-to-br from-card to-card/70 p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">New Bookings</p>
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                  <CarFront className="h-4 w-4 text-primary" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold mt-3">
+                {data.new_counts.bookings.toLocaleString("en-IN")}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Fresh bookings created</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-6">
+        <PaymentsSummary chartData={data.payment_chart} />
       </div>
     </div>
   );
