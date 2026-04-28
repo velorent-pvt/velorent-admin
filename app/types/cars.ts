@@ -30,12 +30,16 @@ export type CarWithDetails = {
 export type PendingCar = {
   id: string;
   registration_number: string;
+  created_at: string;
 
   host: {
     id: string;
-    profile: {
-      full_name: string;
-    };
+    full_name: string;
+  };
+
+  brand: {
+    id: string;
+    name: string;
   };
 
   model: {
@@ -54,4 +58,17 @@ export type PendingCar = {
     city: string;
     pincode: string;
   };
+
+  hourly_price: number;
+  is_active: boolean;
+  bookings: {
+    start_time: string;
+    end_time: string;
+    status: string;
+  }[];
+  car_availability: {
+    start_time: string;
+    end_time: string;
+    status: string;
+  }[];
 };

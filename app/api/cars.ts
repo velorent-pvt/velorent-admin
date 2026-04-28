@@ -8,6 +8,9 @@ export async function getPendingCars() {
       `
         id,
         registration_number,
+        hourly_price,
+        is_active,
+        created_at,
         host:profiles!host_id (
             id,
             full_name
@@ -49,11 +52,19 @@ export async function getApprovedCars() {
       `
         id,
         registration_number,
+        hourly_price,
+        is_active,
+        created_at,
         host:profiles!host_id (
             id,
             full_name
         ),
-        
+
+        brand:car_brands!brand_id (
+            id,
+            name
+        ),
+
         model:car_models!model_id (
             id,
             name
@@ -69,11 +80,22 @@ export async function getApprovedCars() {
             id,
             city,
             pincode
+        ),
+        bookings:bookings!car_id (
+            start_time,
+            end_time,
+            status
+        ),
+        car_availability:car_availability!car_id (
+            start_time,
+            end_time,
+            status
         )
     `,
     )
     .eq("is_verified", true)
-    .eq("image.is_primary", true);
+    .eq("image.is_primary", true)
+    .or(`status.eq.confirmed,status.eq.ongoing,status.eq.completed`, { foreignTable: "bookings" });
 
   if (error) {
     console.log(error);

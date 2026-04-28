@@ -2,6 +2,7 @@ import {
   type ColumnDef,
   type ColumnFiltersState,
   type SortingState,
+  type VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -63,6 +64,7 @@ interface DataTableProps<TData, TValue> {
     direction: "asc" | "desc";
   };
   filters?: DataTableFilter[];
+  hiddenColumns?: string[];
 }
 
 export function DataTable<TData, TValue>({
@@ -77,6 +79,7 @@ export function DataTable<TData, TValue>({
   sortOptions = [],
   defaultSort,
   filters = [],
+  hiddenColumns = [],
 }: DataTableProps<TData, TValue>) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState({});
@@ -96,6 +99,9 @@ export function DataTable<TData, TValue>({
 
     return [];
   });
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
+    () => Object.fromEntries(hiddenColumns.map((col) => [col, false]))
+  );
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
     () => Object.fromEntries(filters.map((filter) => [filter.column, "all"]))
   );
@@ -107,10 +113,12 @@ export function DataTable<TData, TValue>({
       columnFilters,
       rowSelection,
       sorting,
+      columnVisibility,
     },
     onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),

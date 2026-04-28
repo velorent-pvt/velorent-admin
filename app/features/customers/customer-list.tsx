@@ -15,8 +15,6 @@ export function CustomerList() {
   const [fromDate, setFromDate] = useState<string | undefined>();
   const [toDate, setToDate] = useState<string | undefined>();
 
-  if (isLoading) return <Loader />;
-
   const filteredCustomers = useMemo(() => {
     const items = customers ?? [];
 
@@ -34,6 +32,8 @@ export function CustomerList() {
       return true;
     });
   }, [customers, fromDate, toDate]);
+
+  if (isLoading) return <Loader />;
 
   return (
     <div>

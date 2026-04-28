@@ -9,22 +9,17 @@ interface StatsCardProps {
   change?: string;
 }
 
-export function StatsCard({
-  icon: Icon,
-  label,
-  value,
-  change,
-}: StatsCardProps) {
+export function StatsCard({ icon: Icon, label, value, change }: StatsCardProps) {
   return (
-    <Card>
+    <Card className="shadow-none border border-border/50 rounded-none">
       <CardContent className="flex items-center gap-4">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary">
-          <Icon className="h-5 w-5 text-primary-foreground" />
+        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10">
+          <Icon className="h-5 w-5 text-primary" />
         </div>
 
         <div className="flex-1">
           <h3 className="text-lg font-semibold leading-none">{value}</h3>
-          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="text-sm text-muted-foreground mt-1">{label}</p>
         </div>
 
         {change ? (

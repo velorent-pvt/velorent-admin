@@ -136,3 +136,100 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     })),
   };
 }
+
+export type NewActivity = {
+  customers: { id: string; full_name: string | null; created_at: string }[];
+  hosts: { id: string; full_name: string | null; created_at: string }[];
+  upcoming_bookings: {
+    id: string;
+    booking_code: string;
+    car_name: string;
+    customer_name: string;
+    start_time: string;
+    status: string;
+  }[];
+};
+
+export async function getNewActivity(days: number): Promise<NewActivity> {
+  const now = new Date();
+  const start = new Date(now);
+  start.setDate(start.getDate() - days);
+  start.setHours(0, 0, 0, 0);
+
+  const [customerRows, hostRows, upcomingRows] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, full_name, created_at")
+      .eq("role_id", ROLE_CUSTOMER)
+      .gte("created_at", start.toISOString())
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("profiles")
+      .select("id, full_name, created_at")
+      .eq("role_id", ROLE_HOST)
+      .gte("created_at", start.toISOString())
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("bookings")
+      .select(
+        `id, start_time, status, customer_id,
+        car:cars(registration_number, car_brands(name), car_models(name))`,
+      )
+      .in("status", ["confirmed", "ongoing"])
+      .gte("start_time", now.toISOString())
+      .order("start_time", { ascending: true })
+      .limit(5),
+  ]);
+
+  if (customerRows.error) throw customerRows.error;
+  if (hostRows.error) throw hostRows.error;
+  if (upcomingRows.error) throw upcomingRows.error;
+
+  const upcomingData = (upcomingRows.data as any[]) ?? [];
+  const customerIds = [...new Set(upcomingData.map((b) => String(b.customer_id)).filter(Boolean))];
+
+  let profilesMap = new Map<string, string>();
+  if (customerIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", customerIds);
+    for (const p of (profiles as any[]) ?? []) {
+      profilesMap.set(String(p.id), String(p.full_name ?? ""));
+    }
+  }
+
+  const upcoming_bookings = upcomingData.map((b) => {
+    const car = b.car ?? {};
+    const brandName = Array.isArray(car.car_brands)
+      ? String(car.car_brands[0]?.name ?? "")
+      : String(car.car_brands?.name ?? "");
+    const modelName = Array.isArray(car.car_models)
+      ? String(car.car_models[0]?.name ?? "")
+      : String(car.car_models?.name ?? "");
+    return {
+      id: String(b.id),
+      booking_code: String(b.id).slice(-8).toUpperCase(),
+      car_name: `${brandName} ${modelName}`.trim() || "Unknown Car",
+      customer_name: profilesMap.get(String(b.customer_id)) ?? "Unknown",
+      start_time: String(b.start_time),
+      status: String(b.status),
+    };
+  });
+
+  return {
+    customers: ((customerRows.data as any[]) ?? []).map((c) => ({
+      id: String(c.id),
+      full_name: c.full_name ?? null,
+      created_at: String(c.created_at),
+    })),
+    hosts: ((hostRows.data as any[]) ?? []).map((h) => ({
+      id: String(h.id),
+      full_name: h.full_name ?? null,
+      created_at: String(h.created_at),
+    })),
+    upcoming_bookings,
+  };
+}
