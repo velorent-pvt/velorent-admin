@@ -15,8 +15,6 @@ export function HostList() {
   const [fromDate, setFromDate] = useState<string | undefined>();
   const [toDate, setToDate] = useState<string | undefined>();
 
-  if (isLoading) return <Loader />;
-
   const filteredHosts = useMemo(() => {
     const items = hosts ?? [];
 
@@ -34,6 +32,8 @@ export function HostList() {
       return true;
     });
   }, [hosts, fromDate, toDate]);
+
+  if (isLoading) return <Loader />;
 
   return (
     <div>
