@@ -1,17 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Car,
-  Store,
-  Layers,
-  ClipboardCheck,
-  Users,
-  UserCheck,
-  Settings2Icon,
-  SettingsIcon,
-  LogOut,
-} from "lucide-react";
+import { Car, LogOut, Users } from "lucide-react";
 
 import {
   Sidebar,
@@ -19,16 +9,12 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-  SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from "~/components/ui/sidebar";
 
 import { SidebarNav } from "./SidebarNav";
-import { Form, Link } from "react-router";
+import { Form } from "react-router";
 import Logo from "./Logo";
 
 const data = {

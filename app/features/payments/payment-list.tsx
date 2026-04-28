@@ -1,22 +1,23 @@
-import { DataTable } from "~/components/ui/data-table";
-import { hostColumns } from "./columns";
-import { getAllHosts } from "~/api/customer";
 import { useQuery } from "@tanstack/react-query";
+import { getAllPayments } from "~/api/payments";
 import { Loader } from "~/components/shared/Loader";
+import { DataTable } from "~/components/ui/data-table";
+import { paymentColumns } from "./columns";
 import { DatePicker } from "~/components/ui/date-picker";
 import { useMemo, useState } from "react";
 import { Button } from "~/components/ui/button";
 
-export function HostList() {
-  const { data: hosts, isLoading } = useQuery({
-    queryKey: ["hosts"],
-    queryFn: getAllHosts,
+export function PaymentList() {
+  const { data: payments, isLoading } = useQuery({
+    queryKey: ["admin_payments"],
+    queryFn: getAllPayments,
   });
+
   const [fromDate, setFromDate] = useState<string | undefined>();
   const [toDate, setToDate] = useState<string | undefined>();
 
-  const filteredHosts = useMemo(() => {
-    const items = hosts ?? [];
+  const filteredPayments = useMemo(() => {
+    const items = payments ?? [];
 
     const from = fromDate ? new Date(fromDate) : undefined;
     const to = toDate ? new Date(toDate) : undefined;
@@ -24,34 +25,34 @@ export function HostList() {
     if (from) from.setHours(0, 0, 0, 0);
     if (to) to.setHours(23, 59, 59, 999);
 
-    return items.filter((host) => {
-      const joinedAt = new Date(host.created_at);
-      if (Number.isNaN(joinedAt.getTime())) return false;
-      if (from && joinedAt < from) return false;
-      if (to && joinedAt > to) return false;
+    return items.filter((payment) => {
+      const createdAt = new Date(payment.created_at);
+      if (Number.isNaN(createdAt.getTime())) return false;
+      if (from && createdAt < from) return false;
+      if (to && createdAt > to) return false;
       return true;
     });
-  }, [hosts, fromDate, toDate]);
+  }, [payments, fromDate, toDate]);
 
   if (isLoading) return <Loader />;
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-3xl font-bold">Hosts</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <h1 className="text-3xl font-bold">Payments</h1>
         <div className="flex flex-wrap items-center gap-2">
           <div className="w-44">
             <DatePicker
               value={fromDate}
               onChange={setFromDate}
-              placeholder="Joined from"
+              placeholder="Created from"
             />
           </div>
           <div className="w-44">
             <DatePicker
               value={toDate}
               onChange={setToDate}
-              placeholder="Joined to"
+              placeholder="Created to"
               minDate={fromDate ? new Date(fromDate) : undefined}
             />
           </div>
@@ -70,9 +71,9 @@ export function HostList() {
       </div>
 
       <DataTable
-        data={filteredHosts}
-        columns={hostColumns}
-        title="Hosts"
+        data={filteredPayments}
+        columns={paymentColumns}
+        title="Payments"
         showHeader={false}
       />
     </div>
