@@ -12,3 +12,4 @@ create table hosts (
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
