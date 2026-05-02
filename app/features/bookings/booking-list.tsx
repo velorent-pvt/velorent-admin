@@ -1,25 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
-import { getAllBookings } from "~/api/bookings";
-import { DataTable } from "~/components/ui/data-table";
-import { Loader } from "~/components/shared/Loader";
-import { bookingColumns } from "./columns";
-
-export function BookingList() {
-  const { data: bookings, isLoading } = useQuery({
-    queryKey: ["bookings"],
-    queryFn: getAllBookings,
-  });
-
-  if (isLoading) return <Loader />;
-
-  return (
-    <DataTable
-      data={bookings ?? []}
-      columns={bookingColumns}
-      title="Bookings"
-      searchColumn="status"
-      searchPlaceholder="Filter by status..."
-    />
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getAllBookings, type AdminBooking } from "~/api/bookings";
@@ -52,7 +30,6 @@ export function BookingsList() {
     queryFn: getAllBookings,
   });
 
-  // Filter state
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [depositStatus, setDepositStatus] = useState("all");
@@ -61,7 +38,6 @@ export function BookingsList() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  // Sort state
   const [sortColumn, setSortColumn] = useState<SortColumn>("created_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -69,7 +45,6 @@ export function BookingsList() {
 
   const processedBookings = useMemo(() => {
     const filtered = items.filter((b) => {
-      // Search (booking code, car name, registration number, customer, host)
       if (search) {
         const q = search.toLowerCase();
         const match =
@@ -81,15 +56,12 @@ export function BookingsList() {
         if (!match) return false;
       }
 
-      // Status filters
       if (status !== "all" && b.status !== status) return false;
       if (depositStatus !== "all" && b.deposit_status !== depositStatus) return false;
 
-      // Amount filters
       if (minAmount !== "" && b.total_amount < Number(minAmount)) return false;
       if (maxAmount !== "" && b.total_amount > Number(maxAmount)) return false;
 
-      // Date range (start_time)
       if (dateFrom) {
         const start = new Date(b.start_time);
         const from = new Date(dateFrom);
@@ -225,7 +197,6 @@ export function BookingsList() {
                   </Select>
                 </div>
 
-                {/* Amount Range */}
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     Amount Range (₹)
@@ -249,7 +220,6 @@ export function BookingsList() {
                   </div>
                 </div>
 
-                {/* Trip Start Date Range */}
                 <div className="space-y-2">
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     Trip Start Window

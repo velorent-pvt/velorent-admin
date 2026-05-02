@@ -90,16 +90,6 @@ export const paymentColumns: ColumnDef<AdminPayment>[] = [
     ),
   },
   {
-    accessorKey: "payment_method",
-    header: "Method",
-    cell: ({ row }) => (
-      <div className="text-sm">
-        <div className="font-medium">{humanize(row.original.payment_method)}</div>
-        <div className="text-muted-foreground">{humanize(row.original.payment_gateway)}</div>
-      </div>
-    ),
-  },
-  {
     accessorKey: "gateway_payment_id",
     header: "Reference",
     cell: ({ row }) => <span className="text-muted-foreground">{row.original.gateway_payment_id}</span>,

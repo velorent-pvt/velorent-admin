@@ -638,28 +638,37 @@ export type Database = {
         Row: {
           aadhaar_name: string | null
           aadhaar_number: string | null
+          bank_account_holder: string | null
+          bank_account_number: string | null
           created_at: string | null
           dl_name: string | null
           dl_number: string | null
           id: string
+          ifsc_code: string | null
           updated_at: string | null
         }
         Insert: {
           aadhaar_name?: string | null
           aadhaar_number?: string | null
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
           created_at?: string | null
           dl_name?: string | null
           dl_number?: string | null
           id: string
+          ifsc_code?: string | null
           updated_at?: string | null
         }
         Update: {
           aadhaar_name?: string | null
           aadhaar_number?: string | null
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
           created_at?: string | null
           dl_name?: string | null
           dl_number?: string | null
           id?: string
+          ifsc_code?: string | null
           updated_at?: string | null
         }
         Relationships: [

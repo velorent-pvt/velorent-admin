@@ -36,6 +36,9 @@ export default [
     route("disputes", "routes/disputes/index.tsx"),
     route("disputes/:id", "routes/disputes/detail.tsx"),
     route("payments", "routes/payments/index.tsx"),
+    route("payments/customer-refund", "routes/payments/customer-refund.tsx"),
+    route("payments/customer-deposit", "routes/payments/customer-deposit.tsx"),
+    route("payments/host-payout", "routes/payments/host-payout.tsx"),
 
     route("coupons", "routes/coupons/index.tsx"),
     route("coupons/new", "routes/coupons/add.tsx"),

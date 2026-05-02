@@ -152,30 +152,30 @@ export default function Home() {
                 {activity?.upcoming_bookings.map((b) => (
                   <div
                     key={b.id}
-                    className="flex items-center justify-between py-3 gap-4"
+                    className="flex items-start justify-between py-3 gap-3"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex flex-1 items-center gap-3 min-w-0">
                       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
                         <CarFront className="h-4 w-4 text-primary" />
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium text-sm truncate">{b.car_name}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground truncate">
                           #{b.booking_code} · {b.customer_name}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 shrink-0">
-                      <p className="text-xs text-muted-foreground hidden sm:block">
+                    <div className="flex items-center gap-2 shrink-0">
+                      <p className="text-xs text-muted-foreground whitespace-nowrap">
                         {formatDateTime(b.start_time)}
                       </p>
-                      <Badge variant={statusVariant(b.status)} className="capitalize">
+                      <Badge variant={statusVariant(b.status)} className="capitalize whitespace-nowrap">
                         {b.status}
                       </Badge>
                       <Link
                         to={`/bookings/${b.id}`}
-                        className="text-xs text-primary hover:underline"
+                        className="text-xs text-primary hover:underline whitespace-nowrap"
                       >
                         View
                       </Link>
