@@ -82,20 +82,50 @@ export function SidebarNav({
           </SidebarMenuButton>
         </SidebarMenuItem>
 
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            asChild
-            tooltip="Payments"
-            className={`rounded-xl gap-3 px-4 text-[15px] font-medium ${
-              isActive("/payments") && "bg-primary text-primary-foreground"
-            }`}
-          >
-            <Link to="/payments">
-              <Wallet2 />
-              <span>Payments</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+        <Collapsible
+          asChild
+          defaultOpen={isGroupActive([
+            { url: "/payments/customer-refund" },
+            { url: "/payments/customer-deposit" },
+            { url: "/payments/host-payout" },
+          ])}
+          className="group/collapsible"
+        >
+          <SidebarMenuItem>
+              <CollapsibleTrigger asChild>
+                <SidebarMenuButton
+                  tooltip="Payments"
+                  className={`rounded-xl gap-3 px-4 text-[15px] font-medium ${
+                    isActive("/payments") && "bg-muted"
+                  }`}
+                >
+                  <Wallet2 />
+                  <span>Payments</span>
+                  <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                </SidebarMenuButton>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarMenuSub>
+                  {[
+                    { title: "Customer Refund", url: "/payments/customer-refund" },
+                    { title: "Earnings", url: "/payments/customer-deposit" },
+                    { title: "Host Payout", url: "/payments/host-payout" },
+                  ].map((subItem) => (
+                    <SidebarMenuSubItem key={subItem.title}>
+                      <SidebarMenuSubButton
+                        asChild
+                        className={`rounded-xl px-4 text-sm ${
+                          isActive(subItem.url) && "bg-primary text-primary-foreground"
+                        }`}
+                      >
+                        <Link to={subItem.url}>{subItem.title}</Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  ))}
+                </SidebarMenuSub>
+              </CollapsibleContent>
+          </SidebarMenuItem>
+        </Collapsible>
 
         {items.map((item) => {
           const open = isGroupActive(item.items);
