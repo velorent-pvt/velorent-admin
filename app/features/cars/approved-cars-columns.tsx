@@ -174,6 +174,19 @@ export const approvedCarColumns: ColumnDef<PendingCar>[] = [
   },
 
   {
+    id: "in_service",
+    header: "In Service",
+    cell: ({ row }) => (
+      !row.original.is_active ? (
+        <Badge variant="destructive">Yes</Badge>
+      ) : (
+        <Badge variant="success">No</Badge>
+
+      )
+    ),
+  },
+
+  {
     id: "host",
     header: "Host",
     cell: ({ row }) => (
@@ -181,14 +194,6 @@ export const approvedCarColumns: ColumnDef<PendingCar>[] = [
     ),
   },
 
-  {
-    id: "location",
-    header: "Location",
-    cell: ({ row }) => {
-      const loc = row.original.location;
-      return <span className="text-sm">{loc ? `${loc.city}` : "Not set"}</span>;
-    },
-  },
 
   {
     id: "review",
