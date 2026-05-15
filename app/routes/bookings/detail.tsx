@@ -54,6 +54,7 @@ import {
   User,
   Banknote,
   Bike,
+  Ticket
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Input } from "~/components/ui/input";
@@ -362,6 +363,25 @@ export default function BookingDetailPage() {
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
+    },
+  });
+
+  const { data: couponUsageData } = useQuery({
+    queryKey: ["booking-coupon", id, booking?.customer_id, booking?.created_at],
+    enabled: !!booking?.customer_id && !!booking?.created_at,
+    queryFn: async () => {
+      const bookingTime = new Date(booking!.created_at!);
+      const windowStart = new Date(bookingTime.getTime() - 10 * 60 * 1000).toISOString();
+      const windowEnd = new Date(bookingTime.getTime() + 10 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("coupon_usages")
+        .select(`coupon:coupons(code, discount_type, discount_value), used_at`)
+        .eq("customer_id", booking!.customer_id)
+        .gte("used_at", windowStart)
+        .lte("used_at", windowEnd)
+        .maybeSingle();
+      if (error) return null;
+      return data;
     },
   });
 
@@ -1107,6 +1127,19 @@ export default function BookingDetailPage() {
                     />
                   </div>
                 </div>
+
+                {couponUsageData?.coupon && (
+                  <div>
+                    <h3 className="text-base font-semibold mb-4 flex items-center gap-2 border-b pb-2">
+                      <Ticket className="w-4 h-4 text-primary"/>
+                      Coupon Applied
+                    </h3>
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <span className="text-green-700 text-sm font-bold">{(couponUsageData.coupon as any).code}</span>
+                      <span className="text-sm text-muted-foreground ml-auto">{(couponUsageData.coupon as any).discount_type === "percentage" ? `${(couponUsageData.coupon as any).discount_value}% off` : `₹${(couponUsageData.coupon as any).discount_value} flat off`}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
 

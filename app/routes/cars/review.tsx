@@ -503,7 +503,7 @@ export default function CarDetail() {
                         </p>
                         <Button asChild variant="outline" size="sm">
                           <a
-                            href={agreement.pdf_url}
+                            href={agreement.pdf_link}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2"

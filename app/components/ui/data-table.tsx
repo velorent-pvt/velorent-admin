@@ -276,7 +276,7 @@ export function DataTable<TData, TValue>({
         </TableBody>
       </Table>
 
-      {showPagination && table.getCanNextPage() && (
+      {showPagination && table.getPageCount() > 1 && (
         <div className="flex items-center justify-end gap-2 p-4">
           <Button
             onClick={() => table.previousPage()}
