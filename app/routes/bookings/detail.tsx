@@ -619,8 +619,17 @@ export default function BookingDetailPage() {
     Number(booking.commission_amount ?? 0);
   const hostSettlementAmount = Math.max(0, hostBaseShare + hostExtraShare);
 
+  const scheduledReturnTime = new Date(booking.end_time).getTime();
+  const actualReturnTime = returnDetails?.created_at
+    ? new Date(returnDetails.created_at).getTime()
+    : scheduledReturnTime;
+  const lateReturnHours =
+    actualReturnTime > scheduledReturnTime
+      ? Math.ceil((actualReturnTime - scheduledReturnTime) / (1000 * 60 * 60))
+      : 0;
+  const lateReturnCharge = lateReturnHours * 125;
   const damageCharge = Math.max(0, Number(damageChargeInput || 0));
-  const customerExtraCharges = extraFare + damageCharge;
+  const customerExtraCharges = extraFare + lateReturnCharge + damageCharge;
   const paidDeposit =
     booking.deposit_status === "paid" ? Number(booking.deposit_amount ?? 0) : 0;
   const customerRefundAmount = Math.max(0, paidDeposit - customerExtraCharges);
@@ -851,6 +860,16 @@ export default function BookingDetailPage() {
                         Extra distance @ 8/km
                       </span>
                       <span>{fmtCurrency(extraFare)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Late return @ 125/hr
+                      </span>
+                      <span>
+                        {lateReturnHours > 0
+                          ? `${fmtCurrency(lateReturnCharge)} (${lateReturnHours} hr${lateReturnHours > 1 ? "s" : ""})`
+                          : fmtCurrency(0)}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Damage charges</span>
