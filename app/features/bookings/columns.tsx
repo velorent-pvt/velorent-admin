@@ -26,15 +26,26 @@ function formatAmount(value: number) {
   });
 }
 
-function bookingStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" | "success" {
+function bookingStatusVariant(
+  status: string,
+): "default" | "secondary" | "destructive" | "outline" | "success" {
   const normalized = status.toLowerCase();
-  if (normalized === "approved" || normalized === "completed" || normalized === "confirmed" || normalized === "ongoing") return "success";
-  if (normalized === "cancelled" || normalized === "rejected") return "destructive";
+  if (
+    normalized === "approved" ||
+    normalized === "completed" ||
+    normalized === "confirmed" ||
+    normalized === "ongoing"
+  )
+    return "success";
+  if (normalized === "cancelled" || normalized === "rejected")
+    return "destructive";
   if (normalized === "pending") return "secondary";
   return "outline";
 }
 
-function depositStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" | "success" {
+function depositStatusVariant(
+  status: string,
+): "default" | "secondary" | "destructive" | "outline" | "success" {
   const normalized = status.toLowerCase();
   if (normalized === "paid" || normalized === "refunded") return "success";
   if (normalized === "forfeited") return "destructive";
@@ -78,7 +89,9 @@ export const bookingColumns: ColumnDef<AdminBooking>[] = [
   {
     accessorKey: "booking_code",
     header: "Booking",
-    cell: ({ row }) => <span className="font-medium">#{row.original.booking_code}</span>,
+    cell: ({ row }) => (
+      <span className="font-medium">#{row.original.booking_code}</span>
+    ),
   },
   {
     accessorKey: "car_name",
@@ -86,25 +99,49 @@ export const bookingColumns: ColumnDef<AdminBooking>[] = [
     cell: ({ row }) => (
       <div className="text-sm">
         <div className="font-medium">{row.original.car_name}</div>
-        <div className="text-muted-foreground">{row.original.registration_number}</div>
+        <div className="text-muted-foreground">
+          {row.original.registration_number}
+        </div>
       </div>
     ),
   },
   {
     accessorKey: "customer_name",
     header: "Customer",
+    cell: ({ row }) => {
+      const value = row.getValue("customer_name") as string;
+
+      return (
+        <span title={value}>
+          {value?.length > 20 ? `${value.slice(0, 20)}...` : value}
+        </span>
+      );
+    },
   },
   {
     accessorKey: "host_name",
     header: "Host",
+    cell: ({ row }) => {
+      const value = row.getValue("host_name") as string;
+
+      return (
+        <span title={value}>
+          {value?.length > 20 ? `${value.slice(0, 20)}...` : value}
+        </span>
+      );
+    },
   },
   {
     accessorKey: "start_time",
     header: "Trip Window",
     cell: ({ row }) => (
       <div className="text-sm">
-        <div className="font-medium">{formatDateTime(row.original.start_time)}</div>
-        <div className="text-muted-foreground">to {formatDateTime(row.original.end_time)}</div>
+        <div className="font-medium">
+          {formatDateTime(row.original.start_time)}
+        </div>
+        <div className="text-muted-foreground">
+          to {formatDateTime(row.original.end_time)}
+        </div>
       </div>
     ),
   },
@@ -113,8 +150,12 @@ export const bookingColumns: ColumnDef<AdminBooking>[] = [
     header: "Amount",
     cell: ({ row }) => (
       <div className="text-sm">
-        <div className="font-medium">{formatAmount(row.original.total_amount)}</div>
-        <div className="text-muted-foreground">{row.original.total_hours} hrs</div>
+        <div className="font-medium">
+          {formatAmount(row.original.total_amount)}
+        </div>
+        <div className="text-muted-foreground">
+          {row.original.total_hours} hrs
+        </div>
       </div>
     ),
   },

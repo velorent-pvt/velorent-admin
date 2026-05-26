@@ -135,6 +135,8 @@ function mapBookingRowToAdminBooking(row: any, profilesById: Map<string, { full_
     car_id: String(row.car_id),
     status: (row.status || "pending") as AdminBooking["status"],
     pickup_type: (row.pickup_type || "self_pickup") as AdminBooking["pickup_type"],
+    delivery_address: row.delivery_address ?? null,
+    handover_otp: row.handover_otp ?? null,
     start_time: String(row.start_time),
     end_time: String(row.end_time),
     total_hours: Number(row.total_hours ?? 0),
