@@ -1,0 +1,624 @@
+{
+  "buildManifest": {
+    "serverBundles": {
+      "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0": {
+        "id": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+        "file": "build/server/nodejs_eyJydW50aW1lIjoibm9kZWpzIn0/index.js",
+        "config": {
+          "runtime": "nodejs"
+        }
+      }
+    },
+    "routeIdToServerBundleId": {
+      "root": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/auth/login": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/auth/logout": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/home": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/brands/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/brands/add": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/brands/delete": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/brands/edit": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/brand-models/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/brand-models/add": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/brand-models/delete": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/brand-models/edit": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/cars/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/cars/review": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/pending/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/pending/review": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/customers/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/hosts/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/bookings/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/bookings/detail": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/disputes/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/disputes/detail": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/payments/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/payments/customer-refund": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/payments/customer-deposit": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/payments/host-payout": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/coupons/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/coupons/add": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/coupons/edit": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/coupons/delete": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/notifications/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0"
+    },
+    "routes": {
+      "root": {
+        "id": "root",
+        "file": "app/root.tsx",
+        "path": "",
+        "config": {
+          "runtime": "nodejs"
+        }
+      },
+      "routes/auth/login": {
+        "id": "routes/auth/login",
+        "parentId": "root",
+        "file": "app/routes/auth/login.tsx",
+        "path": "login",
+        "config": {}
+      },
+      "routes/auth/logout": {
+        "id": "routes/auth/logout",
+        "parentId": "root",
+        "file": "app/routes/auth/logout.tsx",
+        "path": "logout",
+        "config": {}
+      },
+      "routes/index": {
+        "id": "routes/index",
+        "parentId": "root",
+        "file": "app/routes/index.tsx",
+        "config": {}
+      },
+      "routes/home": {
+        "id": "routes/home",
+        "parentId": "routes/index",
+        "file": "app/routes/home.tsx",
+        "index": true,
+        "config": {}
+      },
+      "routes/brands/index": {
+        "id": "routes/brands/index",
+        "parentId": "routes/index",
+        "file": "app/routes/brands/index.tsx",
+        "path": "brands",
+        "config": {}
+      },
+      "routes/brands/add": {
+        "id": "routes/brands/add",
+        "parentId": "routes/index",
+        "file": "app/routes/brands/add.tsx",
+        "path": "brands/new",
+        "config": {}
+      },
+      "routes/brands/delete": {
+        "id": "routes/brands/delete",
+        "parentId": "routes/index",
+        "file": "app/routes/brands/delete.tsx",
+        "path": "brands/delete",
+        "config": {}
+      },
+      "routes/brands/edit": {
+        "id": "routes/brands/edit",
+        "parentId": "routes/index",
+        "file": "app/routes/brands/edit.tsx",
+        "path": "brands/edit",
+        "config": {}
+      },
+      "routes/brand-models/index": {
+        "id": "routes/brand-models/index",
+        "parentId": "routes/index",
+        "file": "app/routes/brand-models/index.tsx",
+        "path": "models",
+        "config": {}
+      },
+      "routes/brand-models/add": {
+        "id": "routes/brand-models/add",
+        "parentId": "routes/index",
+        "file": "app/routes/brand-models/add.tsx",
+        "path": "models/new",
+        "config": {}
+      },
+      "routes/brand-models/delete": {
+        "id": "routes/brand-models/delete",
+        "parentId": "routes/index",
+        "file": "app/routes/brand-models/delete.tsx",
+        "path": "models/delete",
+        "config": {}
+      },
+      "routes/brand-models/edit": {
+        "id": "routes/brand-models/edit",
+        "parentId": "routes/index",
+        "file": "app/routes/brand-models/edit.tsx",
+        "path": "models/edit",
+        "config": {}
+      },
+      "routes/cars/index": {
+        "id": "routes/cars/index",
+        "parentId": "routes/index",
+        "file": "app/routes/cars/index.tsx",
+        "path": "cars",
+        "config": {}
+      },
+      "routes/cars/review": {
+        "id": "routes/cars/review",
+        "parentId": "routes/index",
+        "file": "app/routes/cars/review.tsx",
+        "path": "cars/:id",
+        "config": {}
+      },
+      "routes/pending/index": {
+        "id": "routes/pending/index",
+        "parentId": "routes/index",
+        "file": "app/routes/pending/index.tsx",
+        "path": "pending",
+        "config": {}
+      },
+      "routes/pending/review": {
+        "id": "routes/pending/review",
+        "parentId": "routes/index",
+        "file": "app/routes/pending/review.tsx",
+        "path": "pending/:id",
+        "config": {}
+      },
+      "routes/customers/index": {
+        "id": "routes/customers/index",
+        "parentId": "routes/index",
+        "file": "app/routes/customers/index.tsx",
+        "path": "customers",
+        "config": {}
+      },
+      "routes/hosts/index": {
+        "id": "routes/hosts/index",
+        "parentId": "routes/index",
+        "file": "app/routes/hosts/index.tsx",
+        "path": "hosts",
+        "config": {}
+      },
+      "routes/bookings/index": {
+        "id": "routes/bookings/index",
+        "parentId": "routes/index",
+        "file": "app/routes/bookings/index.tsx",
+        "path": "bookings",
+        "config": {}
+      },
+      "routes/bookings/detail": {
+        "id": "routes/bookings/detail",
+        "parentId": "routes/index",
+        "file": "app/routes/bookings/detail.tsx",
+        "path": "bookings/:id",
+        "config": {}
+      },
+      "routes/disputes/index": {
+        "id": "routes/disputes/index",
+        "parentId": "routes/index",
+        "file": "app/routes/disputes/index.tsx",
+        "path": "disputes",
+        "config": {}
+      },
+      "routes/disputes/detail": {
+        "id": "routes/disputes/detail",
+        "parentId": "routes/index",
+        "file": "app/routes/disputes/detail.tsx",
+        "path": "disputes/:id",
+        "config": {}
+      },
+      "routes/payments/index": {
+        "id": "routes/payments/index",
+        "parentId": "routes/index",
+        "file": "app/routes/payments/index.tsx",
+        "path": "payments",
+        "config": {}
+      },
+      "routes/payments/customer-refund": {
+        "id": "routes/payments/customer-refund",
+        "parentId": "routes/index",
+        "file": "app/routes/payments/customer-refund.tsx",
+        "path": "payments/customer-refund",
+        "config": {}
+      },
+      "routes/payments/customer-deposit": {
+        "id": "routes/payments/customer-deposit",
+        "parentId": "routes/index",
+        "file": "app/routes/payments/customer-deposit.tsx",
+        "path": "payments/customer-deposit",
+        "config": {}
+      },
+      "routes/payments/host-payout": {
+        "id": "routes/payments/host-payout",
+        "parentId": "routes/index",
+        "file": "app/routes/payments/host-payout.tsx",
+        "path": "payments/host-payout",
+        "config": {}
+      },
+      "routes/coupons/index": {
+        "id": "routes/coupons/index",
+        "parentId": "routes/index",
+        "file": "app/routes/coupons/index.tsx",
+        "path": "coupons",
+        "config": {}
+      },
+      "routes/coupons/add": {
+        "id": "routes/coupons/add",
+        "parentId": "routes/index",
+        "file": "app/routes/coupons/add.tsx",
+        "path": "coupons/new",
+        "config": {}
+      },
+      "routes/coupons/edit": {
+        "id": "routes/coupons/edit",
+        "parentId": "routes/index",
+        "file": "app/routes/coupons/edit.tsx",
+        "path": "coupons/edit",
+        "config": {}
+      },
+      "routes/coupons/delete": {
+        "id": "routes/coupons/delete",
+        "parentId": "routes/index",
+        "file": "app/routes/coupons/delete.tsx",
+        "path": "coupons/delete",
+        "config": {}
+      },
+      "routes/notifications/index": {
+        "id": "routes/notifications/index",
+        "parentId": "routes/index",
+        "file": "app/routes/notifications/index.tsx",
+        "path": "notifications",
+        "config": {}
+      }
+    }
+  },
+  "reactRouterConfig": {
+    "appDirectory": "D:/omkar/velorent-admin/app",
+    "basename": "/",
+    "buildDirectory": "D:/omkar/velorent-admin/build",
+    "future": {
+      "unstable_optimizeDeps": false,
+      "unstable_subResourceIntegrity": false,
+      "unstable_trailingSlashAwareDataRequests": false,
+      "v8_middleware": false,
+      "v8_splitRouteModules": false,
+      "v8_viteEnvironmentApi": false
+    },
+    "routes": {
+      "root": {
+        "id": "root",
+        "file": "root.tsx",
+        "path": ""
+      },
+      "routes/auth/login": {
+        "id": "routes/auth/login",
+        "parentId": "root",
+        "file": "routes/auth/login.tsx",
+        "path": "login"
+      },
+      "routes/auth/logout": {
+        "id": "routes/auth/logout",
+        "parentId": "root",
+        "file": "routes/auth/logout.tsx",
+        "path": "logout"
+      },
+      "routes/index": {
+        "id": "routes/index",
+        "parentId": "root",
+        "file": "routes/index.tsx"
+      },
+      "routes/home": {
+        "id": "routes/home",
+        "parentId": "routes/index",
+        "file": "routes/home.tsx",
+        "index": true
+      },
+      "routes/brands/index": {
+        "id": "routes/brands/index",
+        "parentId": "routes/index",
+        "file": "routes/brands/index.tsx",
+        "path": "brands"
+      },
+      "routes/brands/add": {
+        "id": "routes/brands/add",
+        "parentId": "routes/index",
+        "file": "routes/brands/add.tsx",
+        "path": "brands/new"
+      },
+      "routes/brands/delete": {
+        "id": "routes/brands/delete",
+        "parentId": "routes/index",
+        "file": "routes/brands/delete.tsx",
+        "path": "brands/delete"
+      },
+      "routes/brands/edit": {
+        "id": "routes/brands/edit",
+        "parentId": "routes/index",
+        "file": "routes/brands/edit.tsx",
+        "path": "brands/edit"
+      },
+      "routes/brand-models/index": {
+        "id": "routes/brand-models/index",
+        "parentId": "routes/index",
+        "file": "routes/brand-models/index.tsx",
+        "path": "models"
+      },
+      "routes/brand-models/add": {
+        "id": "routes/brand-models/add",
+        "parentId": "routes/index",
+        "file": "routes/brand-models/add.tsx",
+        "path": "models/new"
+      },
+      "routes/brand-models/delete": {
+        "id": "routes/brand-models/delete",
+        "parentId": "routes/index",
+        "file": "routes/brand-models/delete.tsx",
+        "path": "models/delete"
+      },
+      "routes/brand-models/edit": {
+        "id": "routes/brand-models/edit",
+        "parentId": "routes/index",
+        "file": "routes/brand-models/edit.tsx",
+        "path": "models/edit"
+      },
+      "routes/cars/index": {
+        "id": "routes/cars/index",
+        "parentId": "routes/index",
+        "file": "routes/cars/index.tsx",
+        "path": "cars"
+      },
+      "routes/cars/review": {
+        "id": "routes/cars/review",
+        "parentId": "routes/index",
+        "file": "routes/cars/review.tsx",
+        "path": "cars/:id"
+      },
+      "routes/pending/index": {
+        "id": "routes/pending/index",
+        "parentId": "routes/index",
+        "file": "routes/pending/index.tsx",
+        "path": "pending"
+      },
+      "routes/pending/review": {
+        "id": "routes/pending/review",
+        "parentId": "routes/index",
+        "file": "routes/pending/review.tsx",
+        "path": "pending/:id"
+      },
+      "routes/customers/index": {
+        "id": "routes/customers/index",
+        "parentId": "routes/index",
+        "file": "routes/customers/index.tsx",
+        "path": "customers"
+      },
+      "routes/hosts/index": {
+        "id": "routes/hosts/index",
+        "parentId": "routes/index",
+        "file": "routes/hosts/index.tsx",
+        "path": "hosts"
+      },
+      "routes/bookings/index": {
+        "id": "routes/bookings/index",
+        "parentId": "routes/index",
+        "file": "routes/bookings/index.tsx",
+        "path": "bookings"
+      },
+      "routes/bookings/detail": {
+        "id": "routes/bookings/detail",
+        "parentId": "routes/index",
+        "file": "routes/bookings/detail.tsx",
+        "path": "bookings/:id"
+      },
+      "routes/disputes/index": {
+        "id": "routes/disputes/index",
+        "parentId": "routes/index",
+        "file": "routes/disputes/index.tsx",
+        "path": "disputes"
+      },
+      "routes/disputes/detail": {
+        "id": "routes/disputes/detail",
+        "parentId": "routes/index",
+        "file": "routes/disputes/detail.tsx",
+        "path": "disputes/:id"
+      },
+      "routes/payments/index": {
+        "id": "routes/payments/index",
+        "parentId": "routes/index",
+        "file": "routes/payments/index.tsx",
+        "path": "payments"
+      },
+      "routes/payments/customer-refund": {
+        "id": "routes/payments/customer-refund",
+        "parentId": "routes/index",
+        "file": "routes/payments/customer-refund.tsx",
+        "path": "payments/customer-refund"
+      },
+      "routes/payments/customer-deposit": {
+        "id": "routes/payments/customer-deposit",
+        "parentId": "routes/index",
+        "file": "routes/payments/customer-deposit.tsx",
+        "path": "payments/customer-deposit"
+      },
+      "routes/payments/host-payout": {
+        "id": "routes/payments/host-payout",
+        "parentId": "routes/index",
+        "file": "routes/payments/host-payout.tsx",
+        "path": "payments/host-payout"
+      },
+      "routes/coupons/index": {
+        "id": "routes/coupons/index",
+        "parentId": "routes/index",
+        "file": "routes/coupons/index.tsx",
+        "path": "coupons"
+      },
+      "routes/coupons/add": {
+        "id": "routes/coupons/add",
+        "parentId": "routes/index",
+        "file": "routes/coupons/add.tsx",
+        "path": "coupons/new"
+      },
+      "routes/coupons/edit": {
+        "id": "routes/coupons/edit",
+        "parentId": "routes/index",
+        "file": "routes/coupons/edit.tsx",
+        "path": "coupons/edit"
+      },
+      "routes/coupons/delete": {
+        "id": "routes/coupons/delete",
+        "parentId": "routes/index",
+        "file": "routes/coupons/delete.tsx",
+        "path": "coupons/delete"
+      },
+      "routes/notifications/index": {
+        "id": "routes/notifications/index",
+        "parentId": "routes/index",
+        "file": "routes/notifications/index.tsx",
+        "path": "notifications"
+      }
+    },
+    "routeDiscovery": {
+      "mode": "lazy",
+      "manifestPath": "/__manifest"
+    },
+    "serverBuildFile": "index.js",
+    "serverModuleFormat": "esm",
+    "ssr": true,
+    "allowedActionOrigins": false,
+    "unstable_routeConfig": [
+      {
+        "id": "root",
+        "path": "",
+        "file": "root.tsx",
+        "children": [
+          {
+            "file": "routes/auth/login.tsx",
+            "path": "login"
+          },
+          {
+            "file": "routes/auth/logout.tsx",
+            "path": "logout"
+          },
+          {
+            "file": "routes/index.tsx",
+            "children": [
+              {
+                "file": "routes/home.tsx",
+                "index": true
+              },
+              {
+                "file": "routes/brands/index.tsx",
+                "path": "brands"
+              },
+              {
+                "file": "routes/brands/add.tsx",
+                "path": "brands/new"
+              },
+              {
+                "file": "routes/brands/delete.tsx",
+                "path": "brands/delete"
+              },
+              {
+                "file": "routes/brands/edit.tsx",
+                "path": "brands/edit"
+              },
+              {
+                "file": "routes/brand-models/index.tsx",
+                "path": "models"
+              },
+              {
+                "file": "routes/brand-models/add.tsx",
+                "path": "models/new"
+              },
+              {
+                "file": "routes/brand-models/delete.tsx",
+                "path": "models/delete"
+              },
+              {
+                "file": "routes/brand-models/edit.tsx",
+                "path": "models/edit"
+              },
+              {
+                "file": "routes/cars/index.tsx",
+                "path": "cars"
+              },
+              {
+                "file": "routes/cars/review.tsx",
+                "path": "cars/:id"
+              },
+              {
+                "file": "routes/pending/index.tsx",
+                "path": "pending"
+              },
+              {
+                "file": "routes/pending/review.tsx",
+                "path": "pending/:id"
+              },
+              {
+                "file": "routes/customers/index.tsx",
+                "path": "customers"
+              },
+              {
+                "file": "routes/hosts/index.tsx",
+                "path": "hosts"
+              },
+              {
+                "file": "routes/bookings/index.tsx",
+                "path": "bookings"
+              },
+              {
+                "file": "routes/bookings/detail.tsx",
+                "path": "bookings/:id"
+              },
+              {
+                "file": "routes/disputes/index.tsx",
+                "path": "disputes"
+              },
+              {
+                "file": "routes/disputes/detail.tsx",
+                "path": "disputes/:id"
+              },
+              {
+                "file": "routes/payments/index.tsx",
+                "path": "payments"
+              },
+              {
+                "file": "routes/payments/customer-refund.tsx",
+                "path": "payments/customer-refund"
+              },
+              {
+                "file": "routes/payments/customer-deposit.tsx",
+                "path": "payments/customer-deposit"
+              },
+              {
+                "file": "routes/payments/host-payout.tsx",
+                "path": "payments/host-payout"
+              },
+              {
+                "file": "routes/coupons/index.tsx",
+                "path": "coupons"
+              },
+              {
+                "file": "routes/coupons/add.tsx",
+                "path": "coupons/new"
+              },
+              {
+                "file": "routes/coupons/edit.tsx",
+                "path": "coupons/edit"
+              },
+              {
+                "file": "routes/coupons/delete.tsx",
+                "path": "coupons/delete"
+              },
+              {
+                "file": "routes/notifications/index.tsx",
+                "path": "notifications"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "viteConfig": {
+    "build": {
+      "assetsDir": "assets"
+    }
+  }
+}

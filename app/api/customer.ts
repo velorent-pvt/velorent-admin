@@ -15,7 +15,7 @@ export async function getAllCustomers() {
       avatar_url,
       role_id,
       created_at,
-      customer:customers!inner(
+      customer:customers(
         aadhaar_name,
         aadhaar_number,
         dl_name,
