@@ -74,6 +74,7 @@ export function HostList() {
         columns={hostColumns}
         title="Hosts"
         showHeader={false}
+        showPageSizeSelector
       />
     </div>
   );

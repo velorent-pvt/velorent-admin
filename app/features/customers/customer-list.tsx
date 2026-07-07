@@ -74,6 +74,7 @@ export function CustomerList() {
         columns={customerColumns}
         title="Customers"
         showHeader={false}
+        showPageSizeSelector
       />
     </div>
   );
