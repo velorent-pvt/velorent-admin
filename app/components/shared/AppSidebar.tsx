@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Car, LogOut, Users } from "lucide-react";
+import { Car, LogOut, ShieldCheck, Users } from "lucide-react";
 
 import {
   Sidebar,
@@ -54,6 +54,17 @@ const data = {
         {
           title: "Hosts",
           url: "/hosts",
+        },
+      ],
+    },
+    {
+      title: "Verifications",
+      url: "#",
+      icon: ShieldCheck,
+      items: [
+        {
+          title: "Pending Reviews",
+          url: "/pending/verifications",
         },
       ],
     },

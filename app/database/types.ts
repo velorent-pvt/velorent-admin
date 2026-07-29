@@ -599,38 +599,47 @@ export type Database = {
         Row: {
           code: string
           created_at: string | null
+          description: string | null
           discount_type: string
           discount_value: number
           end_date: string
           id: string
+          image_url: string | null
           is_active: boolean | null
           min_booking_amount: number | null
           per_customer_limit: number | null
           start_date: string
+          title: string
         }
         Insert: {
           code: string
           created_at?: string | null
+          description?: string | null
           discount_type: string
           discount_value: number
           end_date: string
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           min_booking_amount?: number | null
           per_customer_limit?: number | null
           start_date: string
+          title: string
         }
         Update: {
           code?: string
           created_at?: string | null
+          description?: string | null
           discount_type?: string
           discount_value?: number
           end_date?: string
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           min_booking_amount?: number | null
           per_customer_limit?: number | null
           start_date?: string
+          title?: string
         }
         Relationships: []
       }

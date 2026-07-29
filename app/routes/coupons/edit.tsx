@@ -41,12 +41,13 @@ export default function EditCouponPage() {
     },
   });
 
-  function handleUpdate(values: CouponFormValues) {
+  function handleUpdate(values: CouponFormValues, file?: File) {
     if (!id) return;
 
     mutate({
       id,
       ...values,
+      imageFile: file,
     });
   }
 

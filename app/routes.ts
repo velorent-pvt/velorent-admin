@@ -27,6 +27,7 @@ export default [
     route("cars/:id", "routes/cars/review.tsx"),
     route("pending", "routes/pending/index.tsx"),
     route("pending/:id", "routes/pending/review.tsx"),
+    route("pending/verifications", "routes/pending/verifications.tsx"),
 
     route("customers", "routes/customers/index.tsx"),
     route("hosts", "routes/hosts/index.tsx"),
