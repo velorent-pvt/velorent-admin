@@ -4,6 +4,9 @@ create table coupons (
   id uuid primary key default gen_random_uuid(),
 
   code text unique not null,
+  title text not null,
+  image_url text,
+  description text,
 
   discount_type text not null
     check (discount_type in ('percentage', 'flat')),

@@ -37,9 +37,32 @@ export const couponColumns: ColumnDef<Coupon>[] = [
   },
 
   {
+    accessorKey: "image_url",
+    header: "Image",
+    cell: ({ row }) =>
+      row.original.image_url ? (
+        <img
+          src={row.original.image_url}
+          alt={row.original.title}
+          className="h-10 w-16 rounded border object-cover"
+        />
+      ) : (
+        <span className="text-muted-foreground">No image</span>
+      ),
+  },
+
+  {
+    accessorKey: "title",
+    header: "Title",
+    cell: ({ row }) => (
+      <span className="font-medium">{row.original.title}</span>
+    ),
+  },
+
+  {
     accessorKey: "code",
     header: "Code",
-    cell: ({ row }) => <span className="font-medium">{row.original.code}</span>,
+    cell: ({ row }) => <span>{row.original.code}</span>,
   },
 
   {
@@ -48,14 +71,14 @@ export const couponColumns: ColumnDef<Coupon>[] = [
       const { discount_type, discount_value } = row.original;
       return discount_type === "percentage"
         ? `${discount_value}%`
-        : `₹${discount_value}`;
+        : `Rs.${discount_value}`;
     },
   },
 
   {
     accessorKey: "min_booking_amount",
     header: "Min Amount",
-    cell: ({ row }) => <span>₹{row.original.min_booking_amount}</span>,
+    cell: ({ row }) => <span>Rs.{row.original.min_booking_amount}</span>,
   },
 
   {
@@ -65,6 +88,7 @@ export const couponColumns: ColumnDef<Coupon>[] = [
       return new Date(row.original.start_date).toLocaleDateString();
     },
   },
+
   {
     accessorKey: "end_date",
     header: "End Date",
@@ -123,7 +147,7 @@ export const couponColumns: ColumnDef<Coupon>[] = [
               variant="destructive"
               className="cursor-pointer"
               onClick={() =>
-                navigate(`delete?title=${coupon.code}&id=${coupon.id}`)
+                navigate(`delete?title=${coupon.title}&id=${coupon.id}`)
               }
             >
               Delete

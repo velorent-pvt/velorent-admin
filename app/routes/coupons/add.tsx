@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import { createCoupon } from "~/api/coupons";
 import { CouponForm } from "~/features/coupons/coupon-form";
+import type { CouponFormValues } from "~/features/coupons/schema";
 import type { Route } from "../+types";
 
 export function meta({}: Route.MetaArgs) {
@@ -24,8 +25,11 @@ export default function AddCouponPage() {
     },
   });
 
-  function handleSubmit(values: any) {
-    mutate(values);
+  function handleSubmit(values: CouponFormValues, file?: File) {
+    mutate({
+      ...values,
+      imageFile: file,
+    });
   }
 
   return (

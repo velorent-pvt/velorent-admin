@@ -39,8 +39,11 @@ export function SidebarNav({
 }) {
   const location = useLocation();
 
-  const isActive = (url: string) =>
-    location.pathname === url || location.pathname.startsWith(url + "/");
+  const isActive = (url: string) => {
+    if (url === "/") return location.pathname === "/";
+    if (url === "/pending" && location.pathname.startsWith("/pending/verifications")) return false;
+    return location.pathname === url || location.pathname.startsWith(url + "/");
+  };
 
   const isGroupActive = (groupItems?: { url: string }[]) =>
     groupItems?.some(
