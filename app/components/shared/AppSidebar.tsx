@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Car, LogOut, ShieldCheck, Users } from "lucide-react";
+import { BellRing, Car, LogOut, ShieldCheck, Users } from "lucide-react";
 
 import {
   Sidebar,
@@ -65,6 +65,17 @@ const data = {
         {
           title: "Pending Reviews",
           url: "/pending/verifications",
+        },
+      ],
+    },
+    {
+      title: "Notifications",
+      url: "#",
+      icon: BellRing,
+      items: [
+        {
+          title: "Push Notifications",
+          url: "/notifications",
         },
       ],
     },

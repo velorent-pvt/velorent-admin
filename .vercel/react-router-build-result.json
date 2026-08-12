@@ -26,6 +26,7 @@
       "routes/cars/review": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/pending/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/pending/review": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/pending/verifications": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/customers/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/hosts/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/bookings/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
@@ -160,6 +161,13 @@
         "parentId": "routes/index",
         "file": "app/routes/pending/review.tsx",
         "path": "pending/:id",
+        "config": {}
+      },
+      "routes/pending/verifications": {
+        "id": "routes/pending/verifications",
+        "parentId": "routes/index",
+        "file": "app/routes/pending/verifications.tsx",
+        "path": "pending/verifications",
         "config": {}
       },
       "routes/customers/index": {
@@ -382,6 +390,12 @@
         "file": "routes/pending/review.tsx",
         "path": "pending/:id"
       },
+      "routes/pending/verifications": {
+        "id": "routes/pending/verifications",
+        "parentId": "routes/index",
+        "file": "routes/pending/verifications.tsx",
+        "path": "pending/verifications"
+      },
       "routes/customers/index": {
         "id": "routes/customers/index",
         "parentId": "routes/index",
@@ -549,6 +563,10 @@
               {
                 "file": "routes/pending/review.tsx",
                 "path": "pending/:id"
+              },
+              {
+                "file": "routes/pending/verifications.tsx",
+                "path": "pending/verifications"
               },
               {
                 "file": "routes/customers/index.tsx",
