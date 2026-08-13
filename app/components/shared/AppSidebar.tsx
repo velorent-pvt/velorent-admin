@@ -74,8 +74,12 @@ const data = {
       icon: BellRing,
       items: [
         {
-          title: "Push Notifications",
+          title: "Compose",
           url: "/notifications",
+        },
+        {
+          title: "Task Notifications",
+          url: "/notifications/tasks",
         },
       ],
     },

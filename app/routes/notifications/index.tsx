@@ -2,7 +2,7 @@ import { NotificationList } from "~/features/notifications/notification-list";
 import type { Route } from "../+types";
 
 export function meta(_: Route.MetaArgs) {
-  return [{ title: "Notifications | Velorent" }];
+  return [{ title: "Compose | Velorent" }];
 }
 
 export default function Notifications() {

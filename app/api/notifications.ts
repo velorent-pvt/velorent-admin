@@ -131,6 +131,21 @@ export async function createPushNotificationCampaign(
   });
 
   if (error) throw error;
+
+  const { error: enqueueError } = await supabase.rpc(
+    "enqueue_due_push_notification_campaigns",
+  );
+
+  if (enqueueError) throw enqueueError;
+
+  const { error: pushError } = await supabase.functions.invoke(
+    "send-push-notifications",
+    {
+      method: "POST",
+    },
+  );
+
+  if (pushError) throw pushError;
 }
 
 export async function cancelPushNotificationCampaign(id: string) {

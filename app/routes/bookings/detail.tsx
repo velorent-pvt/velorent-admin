@@ -88,6 +88,9 @@ const tabTriggerClass =
   "data-[state=active]:shadow-none " +
   "p-4 rounded-none";
 
+const INCLUDED_KM_PER_DAY = 300;
+const LATE_RETURN_CHARGE_PER_HOUR = 125;
+
 type EventUi = {
   label: string;
   Icon: React.ElementType;
@@ -177,6 +180,12 @@ function fmtCurrency(amount: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+}
+
+function formatNumber(value: number) {
+  return Number(value).toLocaleString("en-IN", {
+    maximumFractionDigits: 2,
+  });
 }
 
 function pickFirstString(
@@ -609,16 +618,6 @@ export default function BookingDetailPage() {
   const distanceTravelled = hasDistance
     ? returnDetails.end_odometer_km - handoverDetails.start_odometer_km
     : null;
-  const includedKm = (Number(booking.total_hours ?? 0) / 24) * 300;
-  const extraDistanceKm = Math.max(0, Number(distanceTravelled ?? 0) - includedKm);
-  const extraFare = extraDistanceKm * 8;
-  const hostExtraShare = extraFare * 0.5;
-  const hostBaseShare =
-    Number(booking.total_amount ?? 0) -
-    Number(booking.deposit_amount ?? 0) -
-    Number(booking.commission_amount ?? 0);
-  const hostSettlementAmount = Math.max(0, hostBaseShare + hostExtraShare);
-
   const scheduledReturnTime = new Date(booking.end_time).getTime();
   const actualReturnTime = returnDetails?.created_at
     ? new Date(returnDetails.created_at).getTime()
@@ -627,7 +626,20 @@ export default function BookingDetailPage() {
     actualReturnTime > scheduledReturnTime
       ? Math.ceil((actualReturnTime - scheduledReturnTime) / (1000 * 60 * 60))
       : 0;
-  const lateReturnCharge = lateReturnHours * 125;
+  const lateReturnCharge = lateReturnHours * LATE_RETURN_CHARGE_PER_HOUR;
+  const bookedIncludedKm =
+    (Number(booking.total_hours ?? 0) / 24) * INCLUDED_KM_PER_DAY;
+  const lateReturnIncludedKm =
+    (lateReturnHours / 24) * INCLUDED_KM_PER_DAY;
+  const includedKm = bookedIncludedKm + lateReturnIncludedKm;
+  const extraDistanceKm = Math.max(0, Number(distanceTravelled ?? 0) - includedKm);
+  const extraFare = extraDistanceKm * 8;
+  const hostExtraShare = extraFare * 0.5;
+  const hostBaseShare =
+    Number(booking.total_amount ?? 0) -
+    Number(booking.deposit_amount ?? 0) -
+    Number(booking.commission_amount ?? 0);
+  const hostSettlementAmount = Math.max(0, hostBaseShare + hostExtraShare);
   const damageCharge = Math.max(0, Number(damageChargeInput || 0));
   const customerExtraCharges = extraFare + lateReturnCharge + damageCharge;
   const paidDeposit =
@@ -828,9 +840,25 @@ export default function BookingDetailPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">
-                      Extra distance @ 8/km
+                      Included distance
                     </span>
-                    <span>{Math.max(0, Math.round(extraDistanceKm))} km</span>
+                    <span>{formatNumber(includedKm)} km</span>
+                  </div>
+                  {lateReturnIncludedKm > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Late return km relief
+                      </span>
+                      <span>
+                        {formatNumber(lateReturnIncludedKm)} km ({formatNumber(lateReturnHours / 24)} days)
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      Chargeable extra distance @ 8/km
+                    </span>
+                    <span>{formatNumber(extraDistanceKm)} km</span>
                   </div>
                   <div className="flex justify-between font-semibold pt-1 border-t mt-1">
                     <span>Host payout</span>
@@ -857,7 +885,23 @@ export default function BookingDetailPage() {
                   <div className="space-y-1">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">
-                        Extra distance @ 8/km
+                        Included distance
+                      </span>
+                      <span>{formatNumber(includedKm)} km</span>
+                    </div>
+                    {lateReturnIncludedKm > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">
+                          Late return km relief
+                        </span>
+                        <span>
+                          {formatNumber(lateReturnIncludedKm)} km ({formatNumber(lateReturnHours / 24)} days)
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Chargeable extra distance @ 8/km
                       </span>
                       <span>{fmtCurrency(extraFare)}</span>
                     </div>

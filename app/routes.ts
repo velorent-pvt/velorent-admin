@@ -47,5 +47,6 @@ export default [
     route("coupons/delete", "routes/coupons/delete.tsx"),
 
     route("notifications", "routes/notifications/index.tsx"),
+    route("notifications/tasks", "routes/notifications/tasks.tsx"),
   ]),
 ] satisfies RouteConfig;

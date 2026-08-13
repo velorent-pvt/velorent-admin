@@ -41,7 +41,8 @@
       "routes/coupons/add": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/coupons/edit": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/coupons/delete": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
-      "routes/notifications/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0"
+      "routes/notifications/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/notifications/tasks": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0"
     },
     "routes": {
       "root": {
@@ -274,6 +275,13 @@
         "file": "app/routes/notifications/index.tsx",
         "path": "notifications",
         "config": {}
+      },
+      "routes/notifications/tasks": {
+        "id": "routes/notifications/tasks",
+        "parentId": "routes/index",
+        "file": "app/routes/notifications/tasks.tsx",
+        "path": "notifications/tasks",
+        "config": {}
       }
     }
   },
@@ -485,6 +493,12 @@
         "parentId": "routes/index",
         "file": "routes/notifications/index.tsx",
         "path": "notifications"
+      },
+      "routes/notifications/tasks": {
+        "id": "routes/notifications/tasks",
+        "parentId": "routes/index",
+        "file": "routes/notifications/tasks.tsx",
+        "path": "notifications/tasks"
       }
     },
     "routeDiscovery": {
@@ -627,6 +641,10 @@
               {
                 "file": "routes/notifications/index.tsx",
                 "path": "notifications"
+              },
+              {
+                "file": "routes/notifications/tasks.tsx",
+                "path": "notifications/tasks"
               }
             ]
           }
