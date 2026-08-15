@@ -13,7 +13,7 @@ import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
 
 import { supabase } from "~/lib/supabase";
-import { getUnreadNotifications } from "~/api/notificatiions";
+import { getUnreadNotifications } from "~/api/notifications";
 
 type Notification = {
   id: string;

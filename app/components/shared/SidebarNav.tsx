@@ -41,6 +41,7 @@ export function SidebarNav({
 
   const isActive = (url: string) => {
     if (url === "/") return location.pathname === "/";
+    if (url === "/notifications") return location.pathname === "/notifications";
     if (url === "/pending" && location.pathname.startsWith("/pending/verifications")) return false;
     return location.pathname === url || location.pathname.startsWith(url + "/");
   };
