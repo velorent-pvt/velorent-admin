@@ -14,7 +14,13 @@ export type PushNotificationCampaign = {
   link: string | null;
   deeplink: string | null;
   scheduled_at: string;
-  status: "draft" | "scheduled" | "processing" | "sent" | "cancelled" | "failed";
+  status:
+    | "draft"
+    | "scheduled"
+    | "processing"
+    | "sent"
+    | "cancelled"
+    | "failed";
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -120,32 +126,23 @@ export type CreatePushNotificationCampaignInput = {
 export async function createPushNotificationCampaign(
   input: CreatePushNotificationCampaignInput,
 ) {
-  const { error } = await supabase.from("push_notification_campaigns").insert({
-    title: input.title.trim(),
-    message: input.message.trim(),
-    audience: input.audience,
-    link: input.link?.trim() || null,
-    deeplink: input.deeplink?.trim() || null,
-    scheduled_at: input.scheduled_at,
-    status: "scheduled",
-  });
+  const { data, error } = await supabase
+    .from("push_notification_campaigns")
+    .insert({
+      title: input.title.trim(),
+      message: input.message.trim(),
+      audience: input.audience,
+      link: input.link?.trim() || null,
+      deeplink: input.deeplink?.trim() || null,
+      scheduled_at: input.scheduled_at,
+      status: "scheduled",
+    })
+    .select()
+    .single();
 
   if (error) throw error;
 
-  const { error: enqueueError } = await supabase.rpc(
-    "enqueue_due_push_notification_campaigns",
-  );
-
-  if (enqueueError) throw enqueueError;
-
-  const { error: pushError } = await supabase.functions.invoke(
-    "send-push-notifications",
-    {
-      method: "POST",
-    },
-  );
-
-  if (pushError) throw pushError;
+  return data;
 }
 
 export async function cancelPushNotificationCampaign(id: string) {
