@@ -6,6 +6,9 @@ import {
   markBookingPaymentRefundedAdmin,
   updateDepositStatusAdmin,
   updateBookingStatus,
+  changeBookingCarAdmin,
+
+  getAssignableCars,
   type BookingStatus,
 } from "~/api/bookings";
 import { supabase } from "~/lib/supabase";
@@ -58,6 +61,9 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Input } from "~/components/ui/input";
+import { DatePicker } from "~/components/ui/date-picker";
+
+import { toast } from "sonner";
 
 // ────────────────────────────────────────────────
 // Types / constants
@@ -71,6 +77,10 @@ const STATUS_OPTIONS: BookingStatus[] = [
   "cancelled",
   "rejected",
 ];
+
+const INCLUDED_KM_PER_24_HOURS = 300;
+const EXTRA_KM_RATE = 8;
+const OVERSTAY_SURCHARGE = 30;
 
 const STATUS_COLORS: Record<BookingStatus, string> = {
   pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -87,9 +97,6 @@ const tabTriggerClass =
   "data-[state=active]:bg-primary/10 " +
   "data-[state=active]:shadow-none " +
   "p-4 rounded-none";
-
-const INCLUDED_KM_PER_DAY = 300;
-const LATE_RETURN_CHARGE_PER_HOUR = 125;
 
 type EventUi = {
   label: string;
@@ -182,11 +189,13 @@ function fmtCurrency(amount: number) {
   })}`;
 }
 
-function formatNumber(value: number) {
-  return Number(value).toLocaleString("en-IN", {
-    maximumFractionDigits: 2,
-  });
+function isSuccessfulPayment(status: unknown) {
+  return ["successful", "success", "paid", "completed"].includes(
+    String(status ?? "").toLowerCase(),
+  );
 }
+
+
 
 function pickFirstString(
   source: Record<string, unknown>,
@@ -276,7 +285,9 @@ export default function BookingDetailPage() {
   const [settlementTarget, setSettlementTarget] = useState<
     "host" | "customer" | ""
   >("");
-  const [damageChargeInput, setDamageChargeInput] = useState("0");
+  const [damageChargeInput, setDamageChargeInput] = useState("");
+
+  const [replacementCarId, setReplacementCarId] = useState("");
 
   // Core booking
   const { data: booking, isLoading } = useQuery({
@@ -297,6 +308,24 @@ export default function BookingDetailPage() {
       if (error) throw error;
       return data;
     },
+  });
+
+  const { data: bookingPayments = [] } = useQuery({
+    queryKey: ["booking-payments", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payments")
+        .select("amount, status")
+        .eq("booking_id", id!);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: assignableCars = [] } = useQuery({
+    queryKey: ["assignable-cars"],
+    queryFn: getAssignableCars,
   });
 
   // Activity events
@@ -404,6 +433,29 @@ export default function BookingDetailPage() {
     },
   });
 
+  const invalidateBookingData = () => {
+    queryClient.invalidateQueries({ queryKey: ["booking", id] });
+    queryClient.invalidateQueries({ queryKey: ["bookings"] });
+    queryClient.invalidateQueries({ queryKey: ["admin_bookings"] });
+  };
+
+
+
+  const { mutate: changeCar, status: carChangeStatus } = useMutation({
+    mutationFn: () => {
+      if (!replacementCarId) throw new Error("Choose a replacement car");
+      return changeBookingCarAdmin(id!, replacementCarId);
+    },
+    onSuccess: () => {
+      invalidateBookingData();
+      setReplacementCarId("");
+      toast.success("Booking car changed. Pricing was not changed.");
+    },
+    onError: (error: any) => {
+      toast.error(error?.message ?? "Selected car is unavailable for this booking");
+    },
+  });
+
   // Settlement mutation
   const { mutate: processSettlement, status: settlementStatus } = useMutation({
     mutationFn: async () => {
@@ -455,25 +507,25 @@ export default function BookingDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["admin_payments"] });
       setSettlementTarget("");
       if (result?.mode === "refund_processed") {
-        alert("Deposit refund processed successfully.");
+        toast.success("Deposit refund processed successfully.");
         return;
       }
       if (result?.mode === "collateral_returned") {
-        alert("Collateral return marked successfully.");
+        toast.success("Collateral return marked successfully.");
         return;
       }
       if (result?.mode === "deposit_forfeited") {
-        alert("Deposit marked as forfeited. Collect remaining amount manually.");
+        toast.success("Deposit marked as forfeited. Collect remaining amount manually.");
         return;
       }
       if (result?.mode === "host_payout_paid") {
-        alert("Host payout marked as paid.");
+        toast.success("Host payout marked as paid.");
         return;
       }
-      alert("Settlement recorded successfully!");
+      toast.success("Settlement recorded successfully!");
     },
     onError: (err: any) => {
-      alert(typeof err?.message === "string" ? err.message : "Failed to process settlement");
+      toast.error(typeof err?.message === "string" ? err.message : "Failed to process settlement");
     },
   });
 
@@ -499,6 +551,8 @@ export default function BookingDetailPage() {
     isCustomerSettlementDoneForEffect,
     settlementTarget,
   ]);
+
+
 
   if (isLoading) return <Loader />;
   if (!booking)
@@ -618,6 +672,17 @@ export default function BookingDetailPage() {
   const distanceTravelled = hasDistance
     ? returnDetails.end_odometer_km - handoverDetails.start_odometer_km
     : null;
+  const includedKm =
+    (Number(booking.total_hours ?? 0) / 24) * INCLUDED_KM_PER_24_HOURS;
+  const extraDistanceKm = Math.max(0, Number(distanceTravelled ?? 0) - includedKm);
+  const extraFare = extraDistanceKm * EXTRA_KM_RATE;
+  const hostExtraShare = extraFare * 0.5;
+  const hostBaseShare =
+    Number(booking.total_amount ?? 0) -
+    Number(booking.deposit_amount ?? 0) -
+    Number(booking.commission_amount ?? 0);
+
+
   const scheduledReturnTime = new Date(booking.end_time).getTime();
   const actualReturnTime = returnDetails?.created_at
     ? new Date(returnDetails.created_at).getTime()
@@ -626,22 +691,26 @@ export default function BookingDetailPage() {
     actualReturnTime > scheduledReturnTime
       ? Math.ceil((actualReturnTime - scheduledReturnTime) / (1000 * 60 * 60))
       : 0;
-  const lateReturnCharge = lateReturnHours * LATE_RETURN_CHARGE_PER_HOUR;
-  const bookedIncludedKm =
-    (Number(booking.total_hours ?? 0) / 24) * INCLUDED_KM_PER_DAY;
-  const lateReturnIncludedKm =
-    (lateReturnHours / 24) * INCLUDED_KM_PER_DAY;
-  const includedKm = bookedIncludedKm + lateReturnIncludedKm;
-  const extraDistanceKm = Math.max(0, Number(distanceTravelled ?? 0) - includedKm);
-  const extraFare = extraDistanceKm * 8;
-  const hostExtraShare = extraFare * 0.5;
-  const hostBaseShare =
-    Number(booking.total_amount ?? 0) -
-    Number(booking.deposit_amount ?? 0) -
-    Number(booking.commission_amount ?? 0);
-  const hostSettlementAmount = Math.max(0, hostBaseShare + hostExtraShare);
+  const vehiclePricePerHour =
+    Number(booking.total_hours ?? 0) > 0
+      ? Math.round(Number(booking.base_amount ?? 0) / Number(booking.total_hours))
+      : 0;
+  const overstayRatePerHour = vehiclePricePerHour + OVERSTAY_SURCHARGE;
+  const lateReturnCharge = lateReturnHours * overstayRatePerHour;
+  const hostLateReturnShare = lateReturnCharge * 0.5;
+  const hostSettlementAmount = Math.max(0, hostBaseShare + hostExtraShare + hostLateReturnShare);
   const damageCharge = Math.max(0, Number(damageChargeInput || 0));
-  const customerExtraCharges = extraFare + lateReturnCharge + damageCharge;
+  const amountAlreadyPaid = bookingPayments
+    .filter((payment: any) => isSuccessfulPayment(payment.status))
+    .reduce((total: number, payment: any) => total + Number(payment.amount ?? 0), 0);
+  // An extension increases booking.total_amount but does not take a new payment.
+  // Only charge this difference when an initial successful payment is recorded.
+  const extensionCharge =
+    amountAlreadyPaid > 0
+      ? Math.max(0, Number(booking.total_amount ?? 0) - amountAlreadyPaid)
+      : 0;
+  const customerExtraCharges =
+    extensionCharge + extraFare + lateReturnCharge + damageCharge;
   const paidDeposit =
     booking.deposit_status === "paid" ? Number(booking.deposit_amount ?? 0) : 0;
   const customerRefundAmount = Math.max(0, paidDeposit - customerExtraCharges);
@@ -783,6 +852,7 @@ export default function BookingDetailPage() {
           </Card>
           )}
 
+ 
           {currentStatus === "completed" && (
             <Card>
               <CardHeader>
@@ -840,25 +910,19 @@ export default function BookingDetailPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">
-                      Included distance
+                      Overstay share (50%) @ {fmtCurrency(overstayRatePerHour)}/hr
                     </span>
-                    <span>{formatNumber(includedKm)} km</span>
+                    <span>
+                      {lateReturnHours > 0
+                        ? `${fmtCurrency(hostLateReturnShare)} (${lateReturnHours} hr${lateReturnHours > 1 ? "s" : ""})`
+                        : fmtCurrency(0)}
+                    </span>
                   </div>
-                  {lateReturnIncludedKm > 0 && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">
-                        Late return km relief
+                        Included distance
                       </span>
-                      <span>
-                        {formatNumber(lateReturnIncludedKm)} km ({formatNumber(lateReturnHours / 24)} days)
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Chargeable extra distance @ 8/km
-                    </span>
-                    <span>{formatNumber(extraDistanceKm)} km</span>
+                      <span>{includedKm.toFixed(1)} km</span>
                   </div>
                   <div className="flex justify-between font-semibold pt-1 border-t mt-1">
                     <span>Host payout</span>
@@ -885,29 +949,22 @@ export default function BookingDetailPage() {
                   <div className="space-y-1">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">
-                        Included distance
+                        Extension charge
                       </span>
-                      <span>{formatNumber(includedKm)} km</span>
-                    </div>
-                    {lateReturnIncludedKm > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          Late return km relief
-                        </span>
-                        <span>
-                          {formatNumber(lateReturnIncludedKm)} km ({formatNumber(lateReturnHours / 24)} days)
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        Chargeable extra distance @ 8/km
-                      </span>
-                      <span>{fmtCurrency(extraFare)}</span>
+                      <span>{fmtCurrency(extensionCharge)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">
-                        Late return @ 125/hr
+                        Extra distance @ {fmtCurrency(EXTRA_KM_RATE)}/km
+                      </span>
+                      <span>
+                        {fmtCurrency(extraFare)}
+                        {hasDistance ? ` (${extraDistanceKm.toFixed(1)} km)` : ""}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Overstay @ {fmtCurrency(overstayRatePerHour)}/hr
                       </span>
                       <span>
                         {lateReturnHours > 0
@@ -965,6 +1022,49 @@ export default function BookingDetailPage() {
             </CardContent>
           </Card>
           )}
+
+                   {!["cancelled", "rejected"].includes(currentStatus) && (
+            <Card>
+              <CardContent className="flex flex-col gap-6">
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <p className="text-sm font-medium">Change car</p>
+                  </div>
+                  <Select value={replacementCarId} onValueChange={setReplacementCarId}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose an active replacement car" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {assignableCars
+                          .filter((candidate) => candidate.id !== booking.car_id)
+                          .map((candidate) => (
+                            <SelectItem key={candidate.id} value={candidate.id}>
+                              {candidate.image_url && (
+                                <img
+                                  src={candidate.image_url}
+                                  alt=""
+                                  className="mr-2 inline-block h-8 w-12 rounded object-cover"
+                                />
+                              )}
+                              {candidate.name} · {candidate.registration_number}
+                            </SelectItem>
+                          ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    className="w-full"
+                    disabled={!replacementCarId || carChangeStatus === "pending"}
+                    onClick={() => changeCar()}
+                  >
+                    {carChangeStatus === "pending" ? "Changing car..." : "Change car"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
         </div>
 
         {/* ── RIGHT MAIN ── */}
