@@ -38,7 +38,9 @@ export function DatePicker({
         >
           <div className="flex items-center gap-2">
             <CalendarIcon className="h-4 w-4" />
-            {selectedDate ? selectedDate.toLocaleDateString() : placeholder}
+            {selectedDate
+              ? `${String(selectedDate.getDate()).padStart(2, '0')}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${selectedDate.getFullYear()}`
+              : placeholder}
           </div>
           <ChevronDownIcon className="h-4 w-4 opacity-60" />
         </Button>

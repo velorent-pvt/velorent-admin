@@ -48,5 +48,7 @@ export default [
 
     route("notifications", "routes/notifications/index.tsx"),
     route("notifications/tasks", "routes/notifications/tasks.tsx"),
+
+    route("reports/cars-overview", "routes/reports/cars-overview.tsx"),
   ]),
 ] satisfies RouteConfig;

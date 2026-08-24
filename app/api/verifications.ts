@@ -8,7 +8,7 @@ export type ManualVerification = {
   back_image_url: string;
   status: "pending" | "approved" | "rejected";
   created_at: string;
-  customer: {
+  profile?: {
     id: string;
     full_name: string | null;
     email: string | null;
@@ -42,7 +42,30 @@ export async function getPendingVerifications(): Promise<ManualVerification[]> {
     .order("created_at", { ascending: true });
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as unknown as ManualVerification[];
+
+  const requests = (data ?? []) as unknown as ManualVerification[];
+  const profileIds = [...new Set(requests.map((request) => request.profile_id))];
+  if (profileIds.length === 0) return [];
+
+  const { data: customers, error: customersError } = await supabase
+    .from("customers")
+    .select("id, aadhaar_number, dl_number")
+    .in("id", profileIds);
+
+  if (customersError) throw new Error(customersError.message);
+
+  const documentsByProfile = new Map(
+    ((customers as any[]) ?? []).map((customer) => [String(customer.id), customer]),
+  );
+
+  // A stale pending request must not be sent to review again after the same
+  // document has already been verified on the customer record.
+  return requests.filter((request) => {
+    const customer = documentsByProfile.get(request.profile_id);
+    return request.document_type === "aadhaar"
+      ? !customer?.aadhaar_number
+      : !customer?.dl_number;
+  });
 }
 
 export type ApproveAadhaarInput = {

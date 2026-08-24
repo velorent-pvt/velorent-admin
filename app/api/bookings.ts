@@ -67,6 +67,15 @@ export type AdminBookingDetail = AdminBooking & {
   payment_reference: string;
 };
 
+export type AssignableCar = {
+  id: string;
+  host_id: string;
+  registration_number: string;
+  hourly_price: number;
+  name: string;
+  image_url?: string;
+};
+
 const BOOKING_STATUSES = [
   "approved",
   "pending",
@@ -291,6 +300,47 @@ export async function updateBookingStatus(id: string, status: BookingStatus) {
 
   if (error) throw error;
   return data;
+}
+
+export async function extendBookingAdmin(bookingId: string, endTime: string) {
+  const { data, error } = await supabase.rpc("extend_booking_admin", {
+    p_booking_id: bookingId,
+    p_end_time: endTime,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function changeBookingCarAdmin(bookingId: string, carId: string) {
+  const { data, error } = await supabase.rpc("change_booking_car_admin", {
+    p_booking_id: bookingId,
+    p_car_id: carId,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function getAssignableCars(): Promise<AssignableCar[]> {
+  const { data, error } = await supabase
+    .from("cars")
+    .select("id, host_id, registration_number, hourly_price, car_brands(name), car_models(name), car_images(image_url, is_primary)")
+    .eq("is_verified", true)
+    .eq("is_active", true)
+    .order("registration_number");
+
+  if (error) throw error;
+
+  return ((data as any[]) ?? []).map((car) => ({
+    id: String(car.id),
+    host_id: String(car.host_id),
+    registration_number: String(car.registration_number ?? "-"),
+    hourly_price: normalizeMoney(car.hourly_price),
+    name: `${firstName(car.car_brands)} ${firstName(car.car_models)}`.trim() || "Unnamed car",
+    image_url:
+      car.car_images?.find((image: any) => image.is_primary)?.image_url ??
+      car.car_images?.[0]?.image_url ??
+      undefined,
+  }));
 }
 
 export async function updateBookingStatusAdmin(bookingId: string, status: string) {
