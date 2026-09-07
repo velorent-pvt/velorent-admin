@@ -455,6 +455,12 @@ export async function markHostPayoutPaidAdmin({
   grossBookingAmount,
   securityDepositAmount,
   commissionAmount,
+  basePayoutAmount,
+  extraDistanceCharge = 0,
+  extraDistanceHostShare = 0,
+  overstayCharge = 0,
+  overstayHostShare = 0,
+  settlementAmount,
   notes,
 }: {
   bookingId: string;
@@ -462,6 +468,12 @@ export async function markHostPayoutPaidAdmin({
   grossBookingAmount: number;
   securityDepositAmount: number;
   commissionAmount: number;
+  basePayoutAmount: number;
+  extraDistanceCharge?: number;
+  extraDistanceHostShare?: number;
+  overstayCharge?: number;
+  overstayHostShare?: number;
+  settlementAmount: number;
   notes?: string;
 }) {
   if (!bookingId) throw new Error("bookingId is required");
@@ -474,6 +486,13 @@ export async function markHostPayoutPaidAdmin({
     gross_booking_amount: Number(grossBookingAmount ?? 0),
     security_deposit_amount: Number(securityDepositAmount ?? 0),
     commission_amount: Number(commissionAmount ?? 0),
+    base_payout_amount: Number(basePayoutAmount ?? 0),
+    extra_distance_charge: Number(extraDistanceCharge ?? 0),
+    extra_distance_host_share: Number(extraDistanceHostShare ?? 0),
+    overstay_charge: Number(overstayCharge ?? 0),
+    overstay_host_share: Number(overstayHostShare ?? 0),
+    settlement_amount: Number(settlementAmount ?? 0),
+    settlement_calculated_at: now,
     status: "paid",
     payout_initiated_at: now,
     payout_completed_at: now,

@@ -25,6 +25,7 @@ export type HostPayoutRecord = {
   host_id: string;
   host_name: string;
   host_earnings_amount: number;
+  settlement_amount: number;
   gross_booking_amount: number;
   security_deposit_amount: number;
   commission_amount: number;
@@ -143,6 +144,7 @@ export async function getHostPayouts(): Promise<HostPayoutRecord[]> {
       booking_id,
       host_id,
       host_earnings_amount,
+      settlement_amount,
       gross_booking_amount,
       security_deposit_amount,
       commission_amount,
@@ -183,6 +185,7 @@ export async function getHostPayouts(): Promise<HostPayoutRecord[]> {
     host_id: String(row.host_id),
     host_name: profilesById.get(String(row.host_id))?.full_name ?? "Unknown Host",
     host_earnings_amount: normalizeMoney(row.host_earnings_amount),
+    settlement_amount: normalizeMoney(row.settlement_amount ?? row.host_earnings_amount),
     gross_booking_amount: normalizeMoney(row.gross_booking_amount),
     security_deposit_amount: normalizeMoney(row.security_deposit_amount),
     commission_amount: normalizeMoney(row.commission_amount),

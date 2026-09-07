@@ -107,27 +107,22 @@ export const bookingColumns: ColumnDef<AdminBooking>[] = [
   },
   {
     accessorKey: "customer_name",
-    header: "Customer",
+    header: "Customer / Host",
     cell: ({ row }) => {
-      const value = row.getValue("customer_name") as string;
+      const customerName = row.getValue("customer_name") as string;
+      const hostName = row.original.host_name as string;
 
       return (
-        <span title={value}>
-          {value?.length > 20 ? `${value.slice(0, 20)}...` : value}
-        </span>
-      );
-    },
-  },
-  {
-    accessorKey: "host_name",
-    header: "Host",
-    cell: ({ row }) => {
-      const value = row.getValue("host_name") as string;
-
-      return (
-        <span title={value}>
-          {value?.length > 20 ? `${value.slice(0, 20)}...` : value}
-        </span>
+        <div>
+          <span title={customerName} className="block">
+            {customerName?.length > 20
+              ? `${customerName.slice(0, 20)}...`
+              : customerName}
+          </span>
+          <span title={hostName} className="block">
+            {hostName?.length > 20 ? `${hostName.slice(0, 20)}...` : hostName}
+          </span>
+        </div>
       );
     },
   },
@@ -165,21 +160,6 @@ export const bookingColumns: ColumnDef<AdminBooking>[] = [
     cell: ({ row }) => (
       <Badge variant={bookingStatusVariant(row.original.status)}>
         {humanize(row.original.status)}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "deposit_status",
-    header: "Deposit",
-    cell: ({ row }) => (
-      <Badge variant={depositStatusVariant(row.original.deposit_status)}>
-        {isTwoWheelerCollateral(row.original) ? (
-          <span title="Two-wheeler collateral">
-            <Bike className="h-3.5 w-3.5" />
-          </span>
-        ) : (
-          humanize(row.original.deposit_status)
-        )}
       </Badge>
     ),
   },

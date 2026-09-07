@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+.google-like-map-tiles {
+  filter: saturate(0.72) brightness(1.06) contrast(0.9);
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {

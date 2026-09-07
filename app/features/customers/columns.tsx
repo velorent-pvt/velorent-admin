@@ -61,31 +61,31 @@ export const customerColumns: ColumnDef<Customer>[] = [
     ),
   },
   {
-    accessorKey: "email",
-    header: "Email",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.email || "-"}</span>
-    ),
-  },
-  {
     accessorKey: "phone",
-    header: "Phone",
+    header: "Phone / Email",
     cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.phone || "-"}</span>
+      <div>
+        <span className="text-muted-foreground block">
+          {row.original.phone || "-"}
+        </span>
+        <span className="text-muted-foreground">
+          {row.original.email || "-"}
+        </span>
+      </div>
     ),
   },
   {
     accessorKey: "aadhaar_number",
-    header: "Aadhaar",
+    header: "Aadhaar / DL",
     cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.aadhaar_number || "-"}</span>
-    ),
-  },
-  {
-    accessorKey: "dl_number",
-    header: "Driving License",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.dl_number || "-"}</span>
+      <div>
+        <span className="text-muted-foreground block">
+          {row.original.aadhaar_number || "-"}
+        </span>
+        <span className="text-muted-foreground block">
+          {row.original.dl_number || "-"}
+        </span>
+      </div>
     ),
   },
   {
@@ -97,11 +97,10 @@ export const customerColumns: ColumnDef<Customer>[] = [
 
       return (
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">
-            {row.original.verification_completed}/{row.original.verification_total}
-          </span>
           <Badge variant={isVerified ? "success" : "secondary"}>
-            {isVerified ? "verified" : `${row.original.verification_pending} pending`}
+            {isVerified
+              ? "verified"
+              : `${row.original.verification_pending} pending`}
           </Badge>
         </div>
       );

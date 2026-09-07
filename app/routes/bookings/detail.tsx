@@ -468,6 +468,12 @@ export default function BookingDetailPage() {
           grossBookingAmount: Number(booking.total_amount ?? 0),
           securityDepositAmount: Number(booking.deposit_amount ?? 0),
           commissionAmount: Number(booking.commission_amount ?? 0),
+          basePayoutAmount: hostBaseShare,
+          extraDistanceCharge: extraFare,
+          extraDistanceHostShare: hostExtraShare,
+          overstayCharge: lateReturnCharge,
+          overstayHostShare: hostLateReturnShare,
+          settlementAmount: hostSettlementAmount,
           notes: "Marked as paid manually by admin",
         });
         return { mode: "host_payout_paid" };

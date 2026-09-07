@@ -91,9 +91,9 @@ const hostPayoutColumns: ColumnDef<HostPayoutRecord>[] = [
   },
   { accessorKey: "host_name", header: "Host" },
   {
-    accessorKey: "host_earnings_amount",
+    accessorKey: "settlement_amount",
     header: "Payout Amount",
-    cell: ({ row }) => formatCurrency(row.original.host_earnings_amount),
+    cell: ({ row }) => formatCurrency(row.original.settlement_amount),
   },
   {
     accessorKey: "status",

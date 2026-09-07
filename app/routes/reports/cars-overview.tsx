@@ -94,7 +94,6 @@ function normalizeCity(value: string | null | undefined) {
     ahmedbad: "Ahmedabad",
     ahmedabd: "Ahmedabad",
     amdavad: "Ahmedabad",
-    amdavad: "Ahmedabad",
   };
 
   if (cityAliases[normalized]) {
@@ -431,6 +430,7 @@ export default function CarsOverview() {
             maxZoom: 19,
             attribution:
               '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
+            className: "google-like-map-tiles",
           }
         ).addTo(map);
 
