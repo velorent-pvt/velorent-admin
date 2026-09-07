@@ -92,6 +92,10 @@ const data = {
           title: "Cars Overview",
           url: "/reports/cars-overview",
         },
+        {
+          title: "User Location",
+          url: "/reports/user-location",
+        },
       ],
     },
   ],
