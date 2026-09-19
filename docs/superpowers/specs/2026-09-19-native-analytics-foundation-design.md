@@ -11,7 +11,7 @@ Create a reliable Supabase-first analytics foundation for VeloRent. The native a
 ## Success Criteria
 
 - The native app records every approved analytics event at its real behavioral or transaction boundary.
-- Anonymous activity can be connected to authenticated activity without storing personal information in analytics.
+- Events are recorded only for authenticated customers and contain no personal information.
 - Analytics failures never block search, KYC, payment, or booking workflows.
 - Temporary offline failures are retried from a bounded local queue.
 - Authoritative database state changes are captured even when the client disconnects.
@@ -25,7 +25,7 @@ The system has three components:
 
 1. A Supabase `analytics_events` table stores immutable events.
 2. A validated `track_analytics_event` RPC accepts native events and derives the authenticated customer from `auth.uid()`.
-3. A native analytics client manages identity, sessions, idempotency, non-blocking delivery, and offline retries.
+3. A native analytics client manages customer-aware event delivery, idempotency, non-blocking delivery, and offline retries.
 
 Database triggers record authoritative state changes such as booking confirmation, booking cancellation, and completed KYC. Client events record user behavior and unsuccessful attempts that may never create a transactional database row.
 
@@ -59,14 +59,12 @@ Event names are represented by a PostgreSQL enum or an equivalent constrained te
 
 ### Correlation Identifiers
 
-- `installation_id`: persistent random UUID generated on first app launch.
-- `session_id`: random UUID generated for each cold app session.
 - `search_id`: random UUID shared by a submitted search and its result event.
 - `booking_attempt_id`: random UUID shared throughout one booking flow.
 - `payment_attempt_id`: random UUID created for each Cashfree checkout attempt, including retries.
 - `idempotency_key`: deterministic or random unique key that identifies one logical event.
 
-The installation ID connects pre-login and post-login behavior on one app installation. Once authenticated, events also include the customer ID derived by the database. No email, phone number, address, government identifier, document image, payment credential, or other directly identifying value is stored.
+Every event belongs to the authenticated customer ID derived by the database. Pre-login activity is intentionally not tracked. No email, phone number, address, government identifier, document image, payment credential, or other directly identifying value is stored.
 
 ## Data Model
 
@@ -79,9 +77,7 @@ The installation ID connects pre-login and post-login behavior on one app instal
 | `occurred_at` | `timestamptz` | Client occurrence time with bounded clock validation |
 | `received_at` | `timestamptz` | Database receipt time |
 | `idempotency_key` | `text` | Unique |
-| `installation_id` | `uuid` | Required |
-| `session_id` | `uuid` | Required for native events |
-| `customer_id` | `uuid` | Nullable; derived from `auth.uid()` |
+| `customer_id` | `uuid` | Required; derived from `auth.uid()` |
 | `search_id` | `uuid` | Nullable |
 | `booking_attempt_id` | `uuid` | Nullable |
 | `payment_attempt_id` | `uuid` | Nullable |
@@ -94,20 +90,20 @@ The installation ID connects pre-login and post-login behavior on one app instal
 | `result_count` | `integer` | Nullable, non-negative |
 | `amount` | `numeric` | Nullable, non-negative |
 | `currency` | `text` | Nullable; `INR` for current payment events |
-| `platform` | constrained text | `android`, `ios`, or `web` |
+| `platform` | constrained text | Required; defaults to `android` |
 | `app_version` | `text` | Nullable, bounded |
 | `failure_reason` | `text` | Nullable normalized code, not raw errors |
 | `cancellation_reason` | `text` | Nullable normalized code |
 | `properties` | `jsonb` | Controlled metadata with size and shape limits |
 
-Indexes cover event/date, customer/date, vehicle/date, session, search, booking, booking attempt, payment attempt, Cashfree order, and normalized search location. The table is append-only for app clients.
+Indexes cover event/date, customer/date, vehicle/date, search, booking, booking attempt, payment attempt, Cashfree order, and normalized search location. The table is append-only for app clients.
 
 ## Security And Validation
 
 - Row-level security denies client reads, updates, and deletes.
 - Inserts are accepted only through the tracking RPC.
 - The RPC ignores any client-supplied customer ID and uses `auth.uid()`.
-- Anonymous sessions may submit events with the Supabase anonymous role, but must provide valid installation/session IDs and an approved payload.
+- Unauthenticated analytics submissions are rejected.
 - Event-specific validation requires relevant fields, such as `vehicle_id` for vehicle views and `payment_attempt_id` for payment events.
 - Metadata depth, keys, string lengths, and serialized size are bounded.
 - Raw exceptions are mapped to controlled failure codes before ingestion.
@@ -117,10 +113,8 @@ Indexes cover event/date, customer/date, vehicle/date, session, search, booking,
 
 The native client provides typed helpers over one generic transport. It is responsible for:
 
-- Generating and persisting installation identity in AsyncStorage.
-- Creating the app session identity.
 - Creating search, booking-attempt, and payment-attempt correlation IDs.
-- Enriching events with platform, app version, and occurrence time.
+- Enriching events with Android platform, app version, and occurrence time.
 - Writing events to a bounded AsyncStorage queue before delivery.
 - Sending events asynchronously without blocking product actions.
 - Retrying transient failures with bounded exponential backoff.
@@ -134,7 +128,7 @@ The provider-neutral interface allows a future GA4 adapter to receive the same e
 
 | Event | Native or server boundary |
 | --- | --- |
-| `app_opened` | Root app initialization, once per app session |
+| `app_opened` | Root initialization after an authenticated customer session is available, once per app launch |
 | `vehicle_searched` | A location/date/filter search is submitted |
 | `search_results_viewed` | Search completes successfully; includes result count |
 | `search_no_results` | Successful search returns zero available vehicles |
@@ -164,7 +158,7 @@ Explicit Cashfree `action_cancelled` outcomes remain `payment_cancelled` and are
 
 - Analytics ingestion is best-effort from the product workflow's perspective.
 - Network and temporary server failures remain queued for retry.
-- Authentication changes do not rewrite historical events; subsequent events receive the authenticated customer ID.
+- Events queued during a temporary authentication loss retry only after the customer session is restored.
 - Invalid payloads are discarded after development logging and are not retried indefinitely.
 - Database-trigger failures must not roll back critical booking, payment, or KYC transactions. Trigger ingestion uses an exception-safe function and records operational warnings where supported.
 - Tracking never includes raw Cashfree responses, raw Supabase errors, or KYC document contents.
@@ -176,7 +170,7 @@ Phase 1 tests cover:
 - SQL constraints, RPC authorization, customer derivation, and event-specific validation.
 - RLS denial for client reads, updates, and deletes.
 - Idempotent duplicate submission.
-- Installation and session identity persistence.
+- Authenticated customer enforcement and app-open deduplication.
 - Queue insertion, successful delivery, retry, expiry, and capacity limits.
 - Cashfree classification for success, failure, pending, and `action_cancelled`.
 - Search result/no-result classification.
@@ -197,4 +191,3 @@ No admin report UI is included in Phase 1. Phase 2 will build reports one at a t
 5. Demand Versus Supply
 
 These reports will combine analytics events with authoritative booking, payment, vehicle availability, and revenue data. Each report will include an explicit metric definition before implementation.
-
