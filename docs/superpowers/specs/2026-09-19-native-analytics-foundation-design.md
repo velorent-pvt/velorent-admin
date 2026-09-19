@@ -163,22 +163,11 @@ Explicit Cashfree `action_cancelled` outcomes remain `payment_cancelled` and are
 - Database-trigger failures must not roll back critical booking, payment, or KYC transactions. Trigger ingestion uses an exception-safe function and records operational warnings where supported.
 - Tracking never includes raw Cashfree responses, raw Supabase errors, or KYC document contents.
 
-## Testing
+## Verification
 
-Phase 1 tests cover:
+Phase 1 will not add an automated test suite. Verification will use database migration/lint checks, focused TypeScript and ESLint checks, an Android production bundle, and a manual authenticated journey covering search, vehicle views, booking, KYC, Cashfree outcomes, booking confirmation, and cancellation.
 
-- SQL constraints, RPC authorization, customer derivation, and event-specific validation.
-- RLS denial for client reads, updates, and deletes.
-- Idempotent duplicate submission.
-- Authenticated customer enforcement and app-open deduplication.
-- Queue insertion, successful delivery, retry, expiry, and capacity limits.
-- Cashfree classification for success, failure, pending, and `action_cancelled`.
-- Search result/no-result classification.
-- KYC aggregate completion only after both required documents are verified.
-- Booking confirmation/cancellation trigger behavior.
-- Payload privacy checks for prohibited fields.
-
-A development-only event logger will make end-to-end manual verification possible without displaying or logging sensitive production data.
+A development-only event logger will support end-to-end verification without displaying or logging sensitive production data. Manual database inspection will confirm customer attribution, event order, correlation IDs, idempotency, trigger behavior, queue retry behavior, and the absence of prohibited personal fields.
 
 ## Phase 2 Deferred Work
 

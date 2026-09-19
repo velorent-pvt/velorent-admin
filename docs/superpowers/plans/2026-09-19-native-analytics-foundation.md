@@ -1,12 +1,12 @@
 # Native Analytics Foundation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Persist secure, customer-level analytics events in Supabase and instrument the VeloRent Android app across search, vehicle, booking, KYC, and Cashfree payment journeys.
 
 **Architecture:** A Supabase migration creates an append-only `analytics_events` store, a validated authenticated RPC, and exception-safe triggers for authoritative KYC and booking outcomes. The native app uses a typed provider-neutral analytics client with a bounded per-customer AsyncStorage queue; screens emit behavioral and unsuccessful-attempt events while the database emits authoritative state outcomes.
 
-**Tech Stack:** PostgreSQL/Supabase migrations and pgTAP, Expo 54/React Native, TypeScript, Supabase JS, AsyncStorage, Expo Crypto, Node test runner with `tsx`.
+**Tech Stack:** PostgreSQL/Supabase migrations, Expo 54/React Native, TypeScript, Supabase JS, AsyncStorage, and Expo Crypto.
 
 **Spec:** `docs/superpowers/specs/2026-09-19-native-analytics-foundation-design.md`
 
@@ -18,15 +18,15 @@
 - Do not store emails, phone numbers, addresses, government IDs, KYC files/content, payment credentials, or raw provider/error payloads.
 - Analytics failures must never block search, KYC, payment, booking, or cancellation workflows.
 - Preserve all unrelated existing changes in both repositories.
-- Use test-first development for every production behavior.
+- Per user direction, do not add or run automated tests; verify with static checks, builds, database inspection, and a manual Android journey.
 
 ## Review Focus
 
-- A queued event created by customer A must never be sent while customer B is authenticated; Task 3 tests per-customer queue ownership.
-- Duplicate client retries or trigger executions must create one row; Task 1 tests `idempotency_key` conflict handling.
-- Oversized or privacy-sensitive metadata must be rejected without breaking product workflows; Tasks 1 and 3 test validation and permanent-failure disposal.
-- Cashfree `action_cancelled` must never be classified as failure or abandonment; Task 6 tests all mutually exclusive terminal outcomes.
-- A successful payment followed by booking creation failure must emit `payment_successful` and `booking_failed` with the same attempt correlations; Task 6 tests this split outcome.
+- A queued event created by customer A must never be sent while customer B is authenticated; queues are keyed by customer ID and only flushed for the current authenticated user.
+- Duplicate client retries or trigger executions must create one row through a unique `idempotency_key`.
+- Oversized or privacy-sensitive metadata must be rejected without breaking product workflows.
+- Cashfree `action_cancelled` must never be classified as failure or abandonment.
+- A successful payment followed by booking creation failure must preserve both facts: `payment_successful` and `booking_failed`.
 
 ---
 
@@ -34,51 +34,20 @@
 
 **Files:**
 - Create: `supabase/migrations/20260919090000_analytics_events.sql`
-- Create: `supabase/tests/analytics_events_test.sql`
 
 **Interfaces:**
 - Consumes: Existing `public.customers`, `public.cars`, and `public.bookings` identifiers; authenticated Supabase JWTs.
 - Produces: `public.analytics_event_name`, `public.analytics_events`, `public.track_analytics_event(...) returns uuid`, and authoritative KYC/booking triggers.
 
-- [ ] **Step 1: Write failing pgTAP tests for schema, RPC security, validation, and idempotency**
+- [ ] **Step 1: Implement the analytics enum, table, indexes, and RLS**
 
-Create tests that assert:
+Create the approved event enum and table from the spec. Use server defaults for `id`, `received_at`, `occurred_at`, `properties`, and `platform = 'android'`. Make `customer_id`, `event_name`, `idempotency_key`, and `platform` non-null.
 
-```sql
-select has_table('public', 'analytics_events');
-select has_function('public', 'track_analytics_event');
-select col_is_not_null('public', 'analytics_events', 'customer_id');
-select col_has_default('public', 'analytics_events', 'platform');
+Create indexes for event/date, customer/date, vehicle/date, search, booking, booking attempt, payment attempt, Cashfree order, and normalized location. Enable RLS, revoke direct mutations from `anon` and `authenticated`, and expose no client read policy.
 
--- Set request.jwt.claim.sub to a seeded customer UUID, call the RPC twice
--- with idempotency_key = 'test:search:1', then assert exactly one row exists.
-select is(
-  (select count(*)::integer from public.analytics_events
-   where idempotency_key = 'test:search:1'),
-  1,
-  'duplicate analytics events are idempotent'
-);
+- [ ] **Step 2: Implement authenticated RPC ingestion**
 
--- Clear auth claims and assert track_analytics_event raises authentication_required.
--- Assert unknown events, negative result_count, overlong reasons, and properties
--- containing email/phone/aadhaar keys are rejected.
-```
-
-Include trigger tests that transition a booking to `confirmed`, then `cancelled`, and complete both customer KYC requirements; assert one authoritative event per outcome even when the update repeats.
-
-- [ ] **Step 2: Run the database tests and verify RED**
-
-Run from `D:\omkar\velorent-admin`:
-
-```powershell
-supabase test db supabase/tests/analytics_events_test.sql
-```
-
-Expected: FAIL because `analytics_events` and `track_analytics_event` do not exist.
-
-- [ ] **Step 3: Implement the migration**
-
-Create the enum with the approved values and the table with the exact contract from the spec. The RPC signature is:
+Use this public interface:
 
 ```sql
 create or replace function public.track_analytics_event(
@@ -104,438 +73,185 @@ create or replace function public.track_analytics_event(
 ) returns uuid
 ```
 
-Implementation requirements:
+Derive `customer_id` exclusively from `auth.uid()` and reject missing authentication. Validate required event-specific IDs, bounded timestamps and strings, non-negative counts/amounts, JSON size/depth, and prohibited personal-data keys. Insert with `ON CONFLICT (idempotency_key) DO NOTHING`, returning the existing row only when it belongs to the same customer. Grant RPC execution only to `authenticated`.
+
+- [ ] **Step 3: Add exception-safe authoritative triggers**
+
+Use deterministic idempotency keys:
 
 ```sql
--- Derive, never accept, customer identity.
-v_customer_id := auth.uid();
-if v_customer_id is null then
-  raise exception 'authentication_required' using errcode = '42501';
-end if;
-
--- Idempotent insert. Return the existing ID on conflict.
-insert into public.analytics_events (...)
-values (..., v_customer_id, ..., 'android', ...)
-on conflict (idempotency_key) do nothing
-returning id into v_event_id;
-
-if v_event_id is null then
-  select id into v_event_id
-  from public.analytics_events
-  where idempotency_key = p_idempotency_key
-    and customer_id = v_customer_id;
-end if;
-```
-
-Validate event-specific required IDs, lengths, non-negative values, occurrence-time skew, metadata size, and prohibited metadata keys recursively. Enable RLS without client table policies; revoke direct mutations and grant only RPC execution to `authenticated`.
-
-Add exception-safe security-definer trigger functions:
-
-```sql
--- Idempotency keys:
 format('booking:%s:confirmed', new.id)
 format('booking:%s:cancelled', new.id)
 format('customer:%s:kyc_completed', new.id)
 ```
 
-Booking triggers fire only on entry into the target status. KYC completion fires only when Aadhaar number/name/address and driving-license number become populated and the prior row was not fully verified. Wrap analytics insertion in an exception block that raises a warning and returns `new` so analytics cannot roll back the product transaction.
+Booking triggers fire only when entering `confirmed` or `cancelled`. KYC completion fires only when Aadhaar number/name/address and driving-license number are populated and the prior row was not fully verified. Wrap analytics inserts in exception blocks that raise warnings and return `new`, ensuring analytics never rolls back product transactions.
 
-- [ ] **Step 4: Run pgTAP and verify GREEN**
+- [ ] **Step 4: Validate the migration locally**
 
 Run:
 
 ```powershell
-supabase test db supabase/tests/analytics_events_test.sql
+supabase db lint
+supabase db reset
 ```
 
-Expected: all analytics schema, RPC, RLS, idempotency, privacy, and trigger tests pass.
+Inspect table constraints, RLS grants, function grants, and trigger definitions with Supabase Studio or `psql`. Manually invoke the RPC authenticated and unauthenticated, repeat one idempotency key, and confirm rejection/deduplication behavior.
 
 - [ ] **Step 5: Commit the database contract**
 
 ```powershell
-git add supabase/migrations/20260919090000_analytics_events.sql supabase/tests/analytics_events_test.sql
+git add supabase/migrations/20260919090000_analytics_events.sql
 git commit -m "feat: add customer analytics event store"
 ```
 
 ---
 
-### Task 2: Typed Event Contract And Outcome Classification
+### Task 2: Typed Native Event Contract And Analytics Client
 
 **Files:**
-- Modify: `D:\omkar\velorent-native\package.json`
-- Modify: `D:\omkar\velorent-native\package-lock.json`
 - Create: `D:\omkar\velorent-native\lib\analytics\events.ts`
-- Create: `D:\omkar\velorent-native\lib\analytics\events.test.ts`
-
-**Interfaces:**
-- Consumes: Approved event names and RPC parameter names from Task 1.
-- Produces: `AnalyticsEventName`, `AnalyticsEventPayloadMap`, `QueuedAnalyticsEvent`, `classifyCashfreeOutcome(errorCode)`, and `normalizeFailureReason(error)`.
-
-- [ ] **Step 1: Add the TypeScript test runner and failing contract tests**
-
-Add `tsx` as a dev dependency and scripts:
-
-```json
-{
-  "scripts": {
-    "test:analytics": "node --import tsx --test lib/analytics/*.test.ts"
-  }
-}
-```
-
-Write table-driven Node tests with literal expectations:
-
-```ts
-test("classifies Cashfree cancellation separately", () => {
-  assert.equal(classifyCashfreeOutcome("action_cancelled"), "payment_cancelled");
-  assert.equal(classifyCashfreeOutcome("payment_failed"), "payment_failed");
-});
-
-test("normalizes errors without retaining sensitive text", () => {
-  assert.equal(normalizeFailureReason({ code: "NETWORK_ERROR" }), "network_error");
-  assert.equal(normalizeFailureReason(new Error("phone +91...")), "unknown_error");
-});
-```
-
-Add compile-time fixtures proving each event accepts only its allowed fields, for example `vehicle_details_viewed` requires `vehicleId`, payment events require `paymentAttemptId`, and search result events require `searchId` plus `resultCount`.
-
-- [ ] **Step 2: Run tests and verify RED**
-
-Run:
-
-```powershell
-npm.cmd run test:analytics
-```
-
-Expected: FAIL because the event contract module does not exist.
-
-- [ ] **Step 3: Implement the typed contract and pure classifiers**
-
-Define a discriminated payload map:
-
-```ts
-export type AnalyticsEventPayloadMap = {
-  app_opened: BasePayload;
-  vehicle_searched: SearchPayload;
-  search_results_viewed: SearchResultPayload;
-  search_no_results: SearchResultPayload;
-  vehicle_details_viewed: VehiclePayload;
-  booking_started: BookingAttemptPayload;
-  booking_failed: BookingFailurePayload;
-  kyc_started: KycPayload;
-  kyc_completed: KycPayload;
-  kyc_failed: KycFailurePayload;
-  payment_started: PaymentPayload;
-  payment_successful: PaymentPayload;
-  payment_failed: PaymentFailurePayload;
-  payment_pending: PaymentPayload;
-  payment_cancelled: PaymentCancellationPayload;
-  booking_confirmed: BookingOutcomePayload;
-  booking_cancelled: BookingCancellationPayload;
-};
-```
-
-Use controlled reason codes only. Do not include arbitrary message fields in any payload type.
-
-- [ ] **Step 4: Run tests and typecheck**
-
-Run:
-
-```powershell
-npm.cmd run test:analytics
-npx.cmd tsc --noEmit
-```
-
-Expected: analytics tests pass. Record unrelated pre-existing TypeScript failures separately; no new error may reference `lib/analytics/events.ts` or its test.
-
-- [ ] **Step 5: Commit the event contract**
-
-```powershell
-git add package.json package-lock.json lib/analytics/events.ts lib/analytics/events.test.ts
-git commit -m "feat: define native analytics event contract"
-```
-
----
-
-### Task 3: Per-Customer Offline Queue And Supabase Transport
-
-**Files:**
 - Create: `D:\omkar\velorent-native\lib\analytics\client.ts`
-- Create: `D:\omkar\velorent-native\lib\analytics\client.test.ts`
 - Create: `D:\omkar\velorent-native\lib\analytics\index.ts`
 - Modify: `D:\omkar\velorent-native\app\_layout.tsx`
 
 **Interfaces:**
-- Consumes: `AnalyticsEventPayloadMap` from Task 2 and `track_analytics_event` from Task 1.
-- Produces: `analytics.track(name, payload)`, `analytics.flush(customerId)`, `analytics.createId()`, and authenticated app-open tracking.
+- Consumes: Task 1 RPC and the existing Supabase/auth/AsyncStorage clients.
+- Produces: `analytics.track(name, payload)`, `analytics.flush(customerId)`, `analytics.createId()`, and typed payloads for every approved event.
 
-- [ ] **Step 1: Write failing queue behavior tests with injected storage and transport**
+- [ ] **Step 1: Define the event payload contract**
 
-Use in-memory fakes implementing these interfaces:
+Create a discriminated `AnalyticsEventPayloadMap` covering all approved events. Require `vehicleId`, `searchId`, `bookingAttemptId`, and `paymentAttemptId` only where applicable. Define controlled `failureReason` and `cancellationReason` codes; do not expose arbitrary error-message fields.
 
-```ts
-export interface AnalyticsStorage {
-  getItem(key: string): Promise<string | null>;
-  setItem(key: string, value: string): Promise<void>;
-}
+Add pure `classifyCashfreeOutcome(errorCode)` and `normalizeFailureReason(error)` functions. `action_cancelled` maps only to `payment_cancelled`; unknown/raw error text maps to `unknown_error`.
 
-export interface AnalyticsTransport {
-  send(event: QueuedAnalyticsEvent): Promise<"accepted" | "duplicate">;
-}
-```
+- [ ] **Step 2: Implement the per-customer queue**
 
-Tests must prove:
-
-```ts
-test("never flushes customer A events as customer B", async () => { /* literal IDs */ });
-test("keeps transient failures queued and removes accepted events", async () => {});
-test("drops invalid permanent failures instead of retrying forever", async () => {});
-test("caps each customer queue at 200 newest events", async () => {});
-test("drops queued events older than seven days", async () => {});
-test("deduplicates app_opened during one app launch", async () => {});
-```
-
-- [ ] **Step 2: Run tests and verify RED**
-
-Run `npm.cmd run test:analytics`.
-
-Expected: FAIL because `AnalyticsClient` does not exist.
-
-- [ ] **Step 3: Implement the queue and transport adapter**
-
-Implement `AnalyticsClient` with dependency injection. Queue keys must be customer-specific:
+Queue keys must be customer-specific:
 
 ```ts
 const queueKey = (customerId: string) => `@velorent/analytics:${customerId}`;
 ```
 
-`track()` obtains the current authenticated user before queueing. If no user exists, it returns without creating an event. It writes to storage before attempting delivery and returns immediately to callers after queueing/scheduling flush.
+Obtain the current authenticated user before queueing. If no user exists, return without creating an event. Store the customer ID inside the local queue record for ownership checks, but never send it as an RPC parameter. Write to AsyncStorage before delivery, cap each queue at 200 newest events, and expire records after seven days.
 
-Map camelCase native payloads to the exact RPC parameter names from Task 1. Classify Supabase authentication/network/5xx errors as retryable; classify validation/4xx contract errors as permanent. Treat duplicate acknowledgement as success.
+Keep transient network/server failures queued with bounded exponential backoff. Remove accepted/duplicate events. Drop permanent validation failures after development-only controlled logging.
 
-The production singleton uses AsyncStorage, `expo-crypto` UUIDs, Expo Constants app version, and the existing Supabase client. Development logging includes only event name, idempotency key, and controlled status.
+- [ ] **Step 3: Implement the Supabase transport**
 
-- [ ] **Step 4: Initialize after authentication and emit app-open**
+Map camelCase native payloads to Task 1 RPC parameter names. Enrich events with app version, Android platform, occurrence time, and a UUID idempotency key. Development logs may include only event name, idempotency key, and controlled delivery status.
 
-In `app/_layout.tsx`, after the authenticated session and profile are ready:
+- [ ] **Step 4: Initialize authenticated app-open tracking**
+
+In `app/_layout.tsx`, after session and profile readiness:
 
 ```ts
 void analytics.track("app_opened", {});
 void analytics.flush(session.user.id);
 ```
 
-Guard the effect so the event is emitted once per process launch, not on every profile rerender. Flush again when the app returns to foreground and the same customer remains authenticated.
+Guard this so it runs once per process launch, then flush the same customer's queue when the app returns to foreground.
 
-- [ ] **Step 5: Run focused tests, lint, and typecheck**
-
-Run:
+- [ ] **Step 5: Run static verification and commit**
 
 ```powershell
-npm.cmd run test:analytics
 npx.cmd eslint lib/analytics app/_layout.tsx
 npx.cmd tsc --noEmit
-```
-
-Expected: analytics tests and focused lint pass; no new analytics-related TypeScript errors.
-
-- [ ] **Step 6: Commit the client**
-
-```powershell
 git add lib/analytics app/_layout.tsx
 git commit -m "feat: add queued customer analytics client"
 ```
 
+Record unrelated pre-existing TypeScript failures separately; no new error may reference analytics files.
+
 ---
 
-### Task 4: Search And Vehicle Discovery Instrumentation
+### Task 3: Search And Vehicle Discovery Instrumentation
 
 **Files:**
 - Modify: `D:\omkar\velorent-native\app\all-cars.tsx`
 - Modify: `D:\omkar\velorent-native\app\car-result.tsx`
 - Modify: `D:\omkar\velorent-native\app\car-detail.tsx`
-- Create: `D:\omkar\velorent-native\lib\analytics\search-events.ts`
-- Create: `D:\omkar\velorent-native\lib\analytics\search-events.test.ts`
 
 **Interfaces:**
-- Consumes: `analytics.track()` and `analytics.createId()` from Task 3.
-- Produces: one correlated search submission/result pair and deduplicated vehicle detail views.
+- Consumes: `analytics.track()` and `analytics.createId()` from Task 2.
+- Produces: Correlated search submission/result events and deduplicated vehicle detail views.
 
-- [ ] **Step 1: Write failing pure search-decision tests**
+- [ ] **Step 1: Track submitted searches**
 
-Create `buildSearchResultEvents` tests:
+Generate one `searchId` when the user submits location/date/filter criteria. Emit `vehicle_searched` with normalized location, pickup/drop-off timestamps, and controlled filter properties. Carry `searchId` through local state or route params.
 
-```ts
-assert.deepEqual(
-  buildSearchResultEvents({ searchId: "s1", resultCount: 0 }),
-  [
-    { name: "search_results_viewed", payload: { searchId: "s1", resultCount: 0 } },
-    { name: "search_no_results", payload: { searchId: "s1", resultCount: 0 } },
-  ],
-);
-```
+- [ ] **Step 2: Track successful search results**
 
-Assert nonzero results emit only `search_results_viewed`, and repeated React Query renders for the same search/result signature return no additional events through the deduplication helper.
+After a successful query, emit `search_results_viewed` once for the search/result signature with `resultCount`. Emit `search_no_results` as an additional event only when the successful result count is zero. Do not emit result events for loading, stale, or error states.
 
-- [ ] **Step 2: Run tests and verify RED**
+- [ ] **Step 3: Track vehicle details**
 
-Run `npm.cmd run test:analytics`.
+In `car-detail.tsx`, emit `vehicle_details_viewed` after the requested vehicle successfully loads, once per mounted vehicle ID. Include incoming `searchId` when available.
 
-Expected: FAIL because the search event helper does not exist.
-
-- [ ] **Step 3: Implement search event helpers and wire both search entry points**
-
-At actual search submission:
-
-```ts
-const searchId = analytics.createId();
-void analytics.track("vehicle_searched", {
-  searchId,
-  searchLocation: normalizedLocation,
-  pickupAt,
-  dropoffAt,
-  properties: { transmission, fuelType, seats },
-});
-```
-
-Carry `searchId` through local state or route params. After a successful query, emit `search_results_viewed` with the count and `search_no_results` when count is zero. Do not emit result events for errors or intermediate loading data.
-
-In `car-detail.tsx`, emit `vehicle_details_viewed` only after the requested vehicle successfully loads, once per mounted vehicle ID. Include an incoming `searchId` when available.
-
-- [ ] **Step 4: Run tests and focused lint**
-
-Run:
+- [ ] **Step 4: Run focused verification and commit**
 
 ```powershell
-npm.cmd run test:analytics
-npx.cmd eslint lib/analytics/search-events.ts app/all-cars.tsx app/car-result.tsx app/car-detail.tsx
-```
-
-Expected: PASS with no duplicate-view or zero-result regressions.
-
-- [ ] **Step 5: Commit discovery tracking**
-
-```powershell
-git add lib/analytics/search-events.ts lib/analytics/search-events.test.ts app/all-cars.tsx app/car-result.tsx app/car-detail.tsx
+npx.cmd eslint app/all-cars.tsx app/car-result.tsx app/car-detail.tsx
+npx.cmd tsc --noEmit
+git add app/all-cars.tsx app/car-result.tsx app/car-detail.tsx
 git commit -m "feat: track customer search and vehicle discovery"
 ```
 
 ---
 
-### Task 5: Booking Attempt And KYC Instrumentation
+### Task 4: Booking Attempt And KYC Instrumentation
 
 **Files:**
 - Modify: `D:\omkar\velorent-native\store\use-booking-store.ts`
 - Modify: `D:\omkar\velorent-native\app\car-detail.tsx`
 - Modify: `D:\omkar\velorent-native\app\verify-aadhaar.tsx`
 - Modify: `D:\omkar\velorent-native\app\verify-driving-license.tsx`
-- Create: `D:\omkar\velorent-native\lib\analytics\kyc-events.ts`
-- Create: `D:\omkar\velorent-native\lib\analytics\kyc-events.test.ts`
 
 **Interfaces:**
-- Consumes: `analytics.track()`/`createId()` and booking store state.
-- Produces: persistent `bookingAttemptId` for a booking flow and KYC start/failure behavioral events. Authoritative `kyc_completed` remains database-triggered.
+- Consumes: Analytics client and existing booking/KYC flows.
+- Produces: Persistent `bookingAttemptId`, `booking_started`, `kyc_started`, and `kyc_failed`. The database owns `kyc_completed`.
 
-- [ ] **Step 1: Write failing KYC classification and booking-attempt tests**
+- [ ] **Step 1: Add booking-attempt correlation state**
 
-Test controlled mappings:
+Add `bookingAttemptId?: string`, `startBookingAttempt(vehicleId)`, and reset behavior to the existing booking store. Preserve the ID throughout booking navigation and clear it only after confirmed booking or explicit flow reset.
 
-```ts
-assert.equal(classifyKycFailure("digilocker_timeout"), "provider_timeout");
-assert.equal(classifyKycFailure("manual_upload_rejected"), "upload_rejected");
-assert.equal(classifyKycFailure("raw aadhaar payload"), "unknown_error");
-```
+- [ ] **Step 2: Track booking start**
 
-Test that starting a new vehicle booking creates a booking attempt ID, navigation within that flow preserves it, and store reset removes it after confirmation or explicit abandonment.
+When an authenticated eligible customer taps Book Now, create/persist the attempt ID and emit `booking_started` with vehicle and optional search IDs. Do not emit when eligibility checks prevent entering the flow.
 
-- [ ] **Step 2: Run tests and verify RED**
+- [ ] **Step 3: Track KYC starts and failures**
 
-Run `npm.cmd run test:analytics`.
+Emit `kyc_started` when DigiLocker launches or the first manual document upload begins, with controlled `documentType` and `method` properties. Emit `kyc_failed` only on a terminal provider/submission failure using normalized reason codes. Never include document content or identity values.
 
-Expected: FAIL for missing KYC helper/booking-attempt state.
+Do not emit client-side `kyc_completed`; the database trigger owns aggregate completion after both required documents are verified.
 
-- [ ] **Step 3: Implement and wire booking start**
-
-Add `bookingAttemptId?: string`, `startBookingAttempt(vehicleId)`, and reset behavior to the existing booking store. When the authenticated customer taps Book Now in `car-detail.tsx`, create/persist the ID and emit:
-
-```ts
-void analytics.track("booking_started", {
-  bookingAttemptId,
-  vehicleId: car.id,
-  searchId,
-});
-```
-
-Do not emit when eligibility validation prevents entering the flow.
-
-- [ ] **Step 4: Wire KYC behavioral events**
-
-Emit `kyc_started` when DigiLocker actually launches or the first manual document upload begins, with `properties.documentType` and `properties.method`. Emit `kyc_failed` only on a terminal provider/submission error using controlled failure reasons. Do not emit personal/document content.
-
-Do not emit client-side `kyc_completed`; the Task 1 database trigger owns aggregate completion after both required documents are verified.
-
-- [ ] **Step 5: Run tests and focused lint**
-
-Run:
+- [ ] **Step 4: Run focused verification and commit**
 
 ```powershell
-npm.cmd run test:analytics
-npx.cmd eslint lib/analytics/kyc-events.ts store/use-booking-store.ts app/car-detail.tsx app/verify-aadhaar.tsx app/verify-driving-license.tsx
-```
-
-Expected: PASS and no sensitive values in captured test payloads.
-
-- [ ] **Step 6: Commit booking/KYC tracking**
-
-```powershell
-git add lib/analytics/kyc-events.ts lib/analytics/kyc-events.test.ts store/use-booking-store.ts app/car-detail.tsx app/verify-aadhaar.tsx app/verify-driving-license.tsx
+npx.cmd eslint store/use-booking-store.ts app/car-detail.tsx app/verify-aadhaar.tsx app/verify-driving-license.tsx
+npx.cmd tsc --noEmit
+git add store/use-booking-store.ts app/car-detail.tsx app/verify-aadhaar.tsx app/verify-driving-license.tsx
 git commit -m "feat: track booking starts and KYC outcomes"
 ```
 
 ---
 
-### Task 6: Cashfree Payment And Booking Outcome Instrumentation
+### Task 5: Cashfree Payment And Booking Outcome Instrumentation
 
 **Files:**
 - Modify: `D:\omkar\velorent-native\app\car-book\checkout.tsx`
-- Create: `D:\omkar\velorent-native\lib\analytics\checkout-events.ts`
-- Create: `D:\omkar\velorent-native\lib\analytics\checkout-events.test.ts`
 
 **Interfaces:**
-- Consumes: Event classifiers from Task 2, `analytics` from Task 3, and `bookingAttemptId` from Task 5.
-- Produces: correlated Cashfree attempt events and client-side `booking_failed`; authoritative `booking_confirmed` remains database-triggered.
+- Consumes: Cashfree classifier, analytics client, and booking attempt state.
+- Produces: Correlated payment lifecycle events and client-side `booking_failed`; the database owns `booking_confirmed`.
 
-- [ ] **Step 1: Write failing checkout state-machine tests**
+- [ ] **Step 1: Create one payment-attempt correlation per Cashfree checkout**
 
-Use a pure reducer/helper to assert exact sequences:
+Generate `paymentAttemptId` when Cashfree order creation succeeds. Emit `payment_started` after order creation and immediately before native checkout, including amount, currency, vehicle, booking attempt, and Cashfree order ID.
 
-```ts
-test("Cashfree cancel emits only payment_cancelled", () => {
-  assert.deepEqual(eventsForCheckoutOutcome({ code: "action_cancelled" }), [
-    { name: "payment_cancelled", reason: "customer_cancelled" },
-  ]);
-});
+- [ ] **Step 2: Track mutually exclusive Cashfree outcomes**
 
-test("verified payment followed by booking failure keeps both facts", () => {
-  assert.deepEqual(eventsForBookingCreationFailure(), [
-    "payment_successful",
-    "booking_failed",
-  ]);
-});
-```
-
-Also test pending verification, non-cancel failure, success, and that terminal outcomes are mutually exclusive for one payment attempt.
-
-- [ ] **Step 2: Run tests and verify RED**
-
-Run `npm.cmd run test:analytics`.
-
-Expected: FAIL because checkout event helpers do not exist.
-
-- [ ] **Step 3: Instrument Cashfree order and callback boundaries**
-
-Generate a new `paymentAttemptId` for every press that successfully creates a Cashfree order. Emit `payment_started` after order creation and immediately before opening checkout, including amount/currency, vehicle, booking attempt, and Cashfree order ID.
-
-Map outcomes exactly:
+Map boundaries exactly:
 
 ```text
 verifyCashfreeOrder(...).isPaid === true -> payment_successful
@@ -544,49 +260,38 @@ onError any other code                  -> payment_failed
 verification retries exhausted          -> payment_pending
 ```
 
-Keep the original product behavior and alerts unchanged. Tracking calls are fire-and-forget and never replace backend payment verification.
+Preserve current alerts and backend verification. Analytics calls are fire-and-forget.
 
-- [ ] **Step 4: Track booking creation failure without duplicating authoritative success**
+- [ ] **Step 3: Track booking failure after payment**
 
-After verified payment, if `createBooking` fails, emit `booking_failed` with `failureReason: "creation_failed_after_payment"` and retain the same booking/payment attempt IDs. Do not emit client-side `booking_confirmed`; the Task 1 booking trigger owns it. Reset booking-attempt state only after confirmed booking or explicit flow reset.
+If `createBooking` fails after verified payment, emit `booking_failed` with `creation_failed_after_payment` and the same booking/payment attempt IDs. Do not emit client-side `booking_confirmed`; the database trigger owns it. Reset booking-attempt state only after confirmed booking or explicit flow reset.
 
-- [ ] **Step 5: Run tests, lint, and Android bundle verification**
-
-Run:
+- [ ] **Step 4: Run focused verification and commit**
 
 ```powershell
-npm.cmd run test:analytics
-npx.cmd eslint lib/analytics app/car-book/checkout.tsx
-npx.cmd expo export --platform android --output-dir .tmp-analytics-export --clear
-```
-
-Expected: all analytics tests and lint pass; Android production bundle completes and resolves all analytics modules. Remove only the verified `.tmp-analytics-export` directory afterward.
-
-- [ ] **Step 6: Commit checkout tracking**
-
-```powershell
-git add lib/analytics/checkout-events.ts lib/analytics/checkout-events.test.ts app/car-book/checkout.tsx
+npx.cmd eslint app/car-book/checkout.tsx lib/analytics
+npx.cmd tsc --noEmit
+git add app/car-book/checkout.tsx lib/analytics
 git commit -m "feat: track Cashfree and booking outcomes"
 ```
 
 ---
 
-### Task 7: End-To-End Contract Verification
+### Task 6: End-To-End Verification And Handoff
 
 **Files:**
 - Create: `D:\omkar\velorent-native\docs\analytics-event-verification.md`
 
 **Interfaces:**
 - Consumes: Complete database and native analytics implementation.
-- Produces: A repeatable development verification checklist and verified Phase 1 handoff.
+- Produces: Repeatable manual verification instructions and a verified Phase 1 handoff.
 
-- [ ] **Step 1: Write the verification checklist before manual execution**
-
-Document the exact journey and expected event rows:
+- [ ] **Step 1: Document the manual journey and expected event order**
 
 ```text
 Authenticated launch -> app_opened
 Search with results -> vehicle_searched, search_results_viewed
+Search without results -> vehicle_searched, search_results_viewed, search_no_results
 Open vehicle -> vehicle_details_viewed
 Tap Book Now -> booking_started
 Start/finish both KYC docs -> kyc_started..., one kyc_completed trigger
@@ -595,14 +300,14 @@ Retry and pay -> payment_started, payment_successful, booking_confirmed trigger
 Cancel booking -> booking_cancelled trigger
 ```
 
-Include SQL that selects only non-sensitive columns by customer and occurrence time.
+Include a SQL query selecting only non-sensitive columns by customer and occurrence time.
 
-- [ ] **Step 2: Run the complete automated verification suite**
+- [ ] **Step 2: Run static and build verification**
 
 Admin repository:
 
 ```powershell
-supabase test db supabase/tests/analytics_events_test.sql
+supabase db lint
 npm.cmd run typecheck
 npm.cmd run build
 ```
@@ -610,29 +315,22 @@ npm.cmd run build
 Native repository:
 
 ```powershell
-npm.cmd run test:analytics
 npx.cmd eslint lib/analytics app/_layout.tsx app/all-cars.tsx app/car-result.tsx app/car-detail.tsx app/verify-aadhaar.tsx app/verify-driving-license.tsx app/car-book/checkout.tsx store/use-booking-store.ts
 npx.cmd tsc --noEmit
 npx.cmd expo export --platform android --output-dir .tmp-analytics-export --clear
 ```
 
-Expected: analytics tests, focused lint, database tests, admin build, and Android bundle pass. Report any unrelated pre-existing full-project failures by file and message; do not hide or fix unrelated changes.
+Remove only the verified `.tmp-analytics-export` directory afterward. Report unrelated pre-existing failures without modifying unrelated files.
 
-- [ ] **Step 3: Perform privacy and event-contract audit**
+- [ ] **Step 3: Perform privacy and payload audit**
 
-Search event payload construction for prohibited keys and raw errors:
+Search analytics calls for personal fields, raw provider responses, and raw errors. Confirm every payload uses controlled IDs, amounts, dates, counts, and reason codes only.
 
-```powershell
-rg -n -i 'email|phone|aadhaar|license_number|document|raw|error\.message' lib/analytics app/_layout.tsx app/all-cars.tsx app/car-result.tsx app/car-detail.tsx app/verify-aadhaar.tsx app/verify-driving-license.tsx app/car-book/checkout.tsx
-```
+- [ ] **Step 4: Execute the authenticated Android journey**
 
-Expected: matches are either controlled document-type labels or existing product logic outside analytics payloads; no prohibited data is passed to `analytics.track`.
+Use one test customer. Confirm event order, customer attribution, correlation IDs, idempotency, authoritative triggers, cancellation classification, and that disabling RPC access does not break product workflows.
 
-- [ ] **Step 4: Execute the development checklist on Android**
-
-Use one authenticated test customer. Confirm event order, correlation IDs, customer attribution, trigger deduplication, and that app behavior remains unchanged when analytics RPC access is temporarily denied.
-
-- [ ] **Step 5: Commit verification documentation and any scoped fixes**
+- [ ] **Step 5: Commit verification documentation**
 
 ```powershell
 git add docs/analytics-event-verification.md
