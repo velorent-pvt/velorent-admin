@@ -17,6 +17,10 @@ export type Customer = {
   verification_completed: number;
   verification_total: number;
   verification_pending: number;
+  vehicle_names?: string | null;
+  search_count?: number;
+  no_result_count?: number;
+  last_searched_at?: string;
 };
 
 export const customerColumns: ColumnDef<Customer>[] = [

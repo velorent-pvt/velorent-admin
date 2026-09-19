@@ -60,6 +60,7 @@ interface DataTableProps<TData, TValue> {
   showPageSizeSelector?: boolean;
   title: string;
   showHeader?: boolean;
+  showTitle?: boolean;
   sortOptions?: DataTableSortOption[];
   defaultSort?: {
     column: string;
@@ -80,6 +81,7 @@ export function DataTable<TData, TValue>({
   showPageSizeSelector = false,
   title,
   showHeader = true,
+  showTitle = true,
   sortOptions = [],
   defaultSort,
   filters = [],
@@ -138,9 +140,9 @@ export function DataTable<TData, TValue>({
   return (
     <div>
       {showHeader && (
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">{title}</h1>
-          <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className={`flex items-center ${showTitle ? "justify-between" : "justify-start"}`}>
+          {showTitle ? <h1 className="text-3xl font-bold">{title}</h1> : null}
+          <div className={`flex items-center gap-2 ${showTitle ? "flex-wrap justify-end" : "w-full flex-nowrap justify-start overflow-x-auto"}`}>
             {filters.map((filter) => (
               <Select
                 key={filter.column}
@@ -222,7 +224,7 @@ export function DataTable<TData, TValue>({
                 onChange={(e) =>
                   table.getColumn(searchColumn)?.setFilterValue(e.target.value)
                 }
-                className="max-w-sm bg-card"
+                className={showTitle ? "max-w-sm bg-card" : "w-60 max-w-none shrink-0 bg-card"}
               />
             )}
           </div>

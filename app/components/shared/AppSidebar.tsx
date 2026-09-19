@@ -89,6 +89,18 @@ const data = {
       icon: PieChart,
       items: [
         {
+          title: "Customer Funnel",
+          url: "/reports/customer-funnel",
+        },
+        {
+          title: "Payment Analytics",
+          url: "/reports/payment-analytics",
+        },
+        {
+          title: "Search Demand",
+          url: "/reports/search-demand",
+        },
+        {
           title: "Cars Overview",
           url: "/reports/cars-overview",
         },

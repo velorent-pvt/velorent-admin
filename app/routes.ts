@@ -8,6 +8,9 @@ import {
 export default [
   route("login", "routes/auth/login.tsx"),
   route("logout", "routes/auth/logout.tsx"),
+  route("api/customer-funnel-dropoffs", "routes/api/customer-funnel-dropoffs.ts"),
+  route("api/payment-analytics-customers", "routes/api/payment-analytics-customers.ts"),
+  route("api/search-location-detail", "routes/api/search-location-detail.ts"),
 
   layout("routes/index.tsx", [
     index("routes/home.tsx"),
@@ -30,6 +33,8 @@ export default [
     route("pending/verifications", "routes/pending/verifications.tsx"),
 
     route("customers", "routes/customers/index.tsx"),
+    route("customers/funnel-dropoffs", "routes/customers/funnel-dropoffs.tsx"),
+    route("customers/payment-analytics", "routes/customers/payment-analytics.tsx"),
     route("hosts", "routes/hosts/index.tsx"),
 
     route("bookings", "routes/bookings/index.tsx"),
@@ -50,6 +55,10 @@ export default [
     route("notifications/tasks", "routes/notifications/tasks.tsx"),
 
     route("reports/cars-overview", "routes/reports/cars-overview.tsx"),
+    route("reports/customer-funnel", "routes/reports/customer-funnel.tsx"),
+    route("reports/payment-analytics", "routes/reports/payment-analytics.tsx"),
+    route("reports/search-demand", "routes/reports/search-demand.tsx"),
+    route("reports/search-demand/location", "routes/reports/search-demand-location.tsx"),
     route("reports/user-location", "routes/reports/user-location.tsx"),
   ]),
 ] satisfies RouteConfig;

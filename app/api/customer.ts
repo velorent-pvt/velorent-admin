@@ -1,4 +1,5 @@
 import { supabase } from "~/lib/supabase";
+import type { Customer } from "~/features/customers/columns";
 
 const ROLE_HOST = 2;
 const ROLE_CUSTOMER = 3;
@@ -110,4 +111,69 @@ export async function getAllHosts() {
   }
 
   return data;
+}
+
+type FunnelDropoffCustomer = Omit<
+  Customer,
+  "verification_completed" | "verification_total" | "verification_pending"
+>;
+
+type AnalyticsCustomer = FunnelDropoffCustomer;
+
+export async function getFunnelDropoffCustomers(
+  stageIndex: number,
+  startDate: string,
+  endDate: string,
+) {
+  const params = new URLSearchParams(
+    {
+      stage: String(stageIndex),
+      start: startDate,
+      end: endDate,
+    },
+  );
+  const response = await fetch(`/api/customer-funnel-dropoffs?${params}`);
+  const result = (await response.json()) as {
+    customers?: FunnelDropoffCustomer[];
+    error?: string;
+  };
+
+  if (!response.ok) throw new Error(result.error ?? "Unable to load funnel customers.");
+
+  return (result.customers ?? []).map((customer) => {
+    const completed = Number(Boolean(customer.aadhaar_number)) + Number(Boolean(customer.dl_number));
+    return {
+      ...customer,
+      created_at: customer.created_at ?? "",
+      verification_completed: completed,
+      verification_total: 2,
+      verification_pending: 2 - completed,
+    };
+  });
+}
+
+export async function getPaymentAnalyticsCustomers(
+  metric: string,
+  startDate: string,
+  endDate: string,
+) {
+  const params = new URLSearchParams({ metric, start: startDate, end: endDate });
+  const response = await fetch(`/api/payment-analytics-customers?${params}`);
+  const result = (await response.json()) as {
+    customers?: AnalyticsCustomer[];
+    error?: string;
+  };
+
+  if (!response.ok) throw new Error(result.error ?? "Unable to load payment customers.");
+
+  return (result.customers ?? []).map((customer) => {
+    const completed = Number(Boolean(customer.aadhaar_number)) + Number(Boolean(customer.dl_number));
+    return {
+      ...customer,
+      created_at: customer.created_at ?? "",
+      verification_completed: completed,
+      verification_total: 2,
+      verification_pending: 2 - completed,
+    };
+  });
 }
