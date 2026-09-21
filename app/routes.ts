@@ -53,6 +53,7 @@ export default [
 
     route("notifications", "routes/notifications/index.tsx"),
     route("notifications/tasks", "routes/notifications/tasks.tsx"),
+    route("settings/booking", "routes/settings/booking.tsx"),
 
     route("reports/cars-overview", "routes/reports/cars-overview.tsx"),
     route("reports/customer-funnel", "routes/reports/customer-funnel.tsx"),

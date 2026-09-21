@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { BellRing, Car, LogOut, ShieldCheck, Users, PieChart } from "lucide-react";
+import { BellRing, Car, LogOut, ShieldCheck, Users, PieChart, Settings } from "lucide-react";
 
 import {
   Sidebar,
@@ -82,6 +82,9 @@ const data = {
           url: "/notifications/tasks",
         },
       ],
+    },
+    {
+      title: "Settings", url: "#", icon: Settings, items: [{ title: "Booking", url: "/settings/booking" }],
     },
     {
       title: "Reports",
