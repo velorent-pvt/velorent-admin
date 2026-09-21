@@ -13,6 +13,9 @@
       "root": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/auth/login": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/auth/logout": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/api/customer-funnel-dropoffs": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/api/payment-analytics-customers": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/api/search-location-detail": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/home": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/brands/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/brands/add": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
@@ -28,6 +31,8 @@
       "routes/pending/review": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/pending/verifications": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/customers/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/customers/funnel-dropoffs": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/customers/payment-analytics": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/hosts/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/bookings/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/bookings/detail": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
@@ -42,7 +47,14 @@
       "routes/coupons/edit": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/coupons/delete": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/notifications/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
-      "routes/notifications/tasks": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0"
+      "routes/notifications/tasks": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/settings/booking": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/reports/cars-overview": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/reports/customer-funnel": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/reports/payment-analytics": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/reports/search-demand": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/reports/search-demand-location": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/reports/user-location": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0"
     },
     "routes": {
       "root": {
@@ -65,6 +77,27 @@
         "parentId": "root",
         "file": "app/routes/auth/logout.tsx",
         "path": "logout",
+        "config": {}
+      },
+      "routes/api/customer-funnel-dropoffs": {
+        "id": "routes/api/customer-funnel-dropoffs",
+        "parentId": "root",
+        "file": "app/routes/api/customer-funnel-dropoffs.ts",
+        "path": "api/customer-funnel-dropoffs",
+        "config": {}
+      },
+      "routes/api/payment-analytics-customers": {
+        "id": "routes/api/payment-analytics-customers",
+        "parentId": "root",
+        "file": "app/routes/api/payment-analytics-customers.ts",
+        "path": "api/payment-analytics-customers",
+        "config": {}
+      },
+      "routes/api/search-location-detail": {
+        "id": "routes/api/search-location-detail",
+        "parentId": "root",
+        "file": "app/routes/api/search-location-detail.ts",
+        "path": "api/search-location-detail",
         "config": {}
       },
       "routes/index": {
@@ -178,6 +211,20 @@
         "path": "customers",
         "config": {}
       },
+      "routes/customers/funnel-dropoffs": {
+        "id": "routes/customers/funnel-dropoffs",
+        "parentId": "routes/index",
+        "file": "app/routes/customers/funnel-dropoffs.tsx",
+        "path": "customers/funnel-dropoffs",
+        "config": {}
+      },
+      "routes/customers/payment-analytics": {
+        "id": "routes/customers/payment-analytics",
+        "parentId": "routes/index",
+        "file": "app/routes/customers/payment-analytics.tsx",
+        "path": "customers/payment-analytics",
+        "config": {}
+      },
       "routes/hosts/index": {
         "id": "routes/hosts/index",
         "parentId": "routes/index",
@@ -282,6 +329,55 @@
         "file": "app/routes/notifications/tasks.tsx",
         "path": "notifications/tasks",
         "config": {}
+      },
+      "routes/settings/booking": {
+        "id": "routes/settings/booking",
+        "parentId": "routes/index",
+        "file": "app/routes/settings/booking.tsx",
+        "path": "settings/booking",
+        "config": {}
+      },
+      "routes/reports/cars-overview": {
+        "id": "routes/reports/cars-overview",
+        "parentId": "routes/index",
+        "file": "app/routes/reports/cars-overview.tsx",
+        "path": "reports/cars-overview",
+        "config": {}
+      },
+      "routes/reports/customer-funnel": {
+        "id": "routes/reports/customer-funnel",
+        "parentId": "routes/index",
+        "file": "app/routes/reports/customer-funnel.tsx",
+        "path": "reports/customer-funnel",
+        "config": {}
+      },
+      "routes/reports/payment-analytics": {
+        "id": "routes/reports/payment-analytics",
+        "parentId": "routes/index",
+        "file": "app/routes/reports/payment-analytics.tsx",
+        "path": "reports/payment-analytics",
+        "config": {}
+      },
+      "routes/reports/search-demand": {
+        "id": "routes/reports/search-demand",
+        "parentId": "routes/index",
+        "file": "app/routes/reports/search-demand.tsx",
+        "path": "reports/search-demand",
+        "config": {}
+      },
+      "routes/reports/search-demand-location": {
+        "id": "routes/reports/search-demand-location",
+        "parentId": "routes/index",
+        "file": "app/routes/reports/search-demand-location.tsx",
+        "path": "reports/search-demand/location",
+        "config": {}
+      },
+      "routes/reports/user-location": {
+        "id": "routes/reports/user-location",
+        "parentId": "routes/index",
+        "file": "app/routes/reports/user-location.tsx",
+        "path": "reports/user-location",
+        "config": {}
       }
     }
   },
@@ -314,6 +410,24 @@
         "parentId": "root",
         "file": "routes/auth/logout.tsx",
         "path": "logout"
+      },
+      "routes/api/customer-funnel-dropoffs": {
+        "id": "routes/api/customer-funnel-dropoffs",
+        "parentId": "root",
+        "file": "routes/api/customer-funnel-dropoffs.ts",
+        "path": "api/customer-funnel-dropoffs"
+      },
+      "routes/api/payment-analytics-customers": {
+        "id": "routes/api/payment-analytics-customers",
+        "parentId": "root",
+        "file": "routes/api/payment-analytics-customers.ts",
+        "path": "api/payment-analytics-customers"
+      },
+      "routes/api/search-location-detail": {
+        "id": "routes/api/search-location-detail",
+        "parentId": "root",
+        "file": "routes/api/search-location-detail.ts",
+        "path": "api/search-location-detail"
       },
       "routes/index": {
         "id": "routes/index",
@@ -410,6 +524,18 @@
         "file": "routes/customers/index.tsx",
         "path": "customers"
       },
+      "routes/customers/funnel-dropoffs": {
+        "id": "routes/customers/funnel-dropoffs",
+        "parentId": "routes/index",
+        "file": "routes/customers/funnel-dropoffs.tsx",
+        "path": "customers/funnel-dropoffs"
+      },
+      "routes/customers/payment-analytics": {
+        "id": "routes/customers/payment-analytics",
+        "parentId": "routes/index",
+        "file": "routes/customers/payment-analytics.tsx",
+        "path": "customers/payment-analytics"
+      },
       "routes/hosts/index": {
         "id": "routes/hosts/index",
         "parentId": "routes/index",
@@ -499,6 +625,48 @@
         "parentId": "routes/index",
         "file": "routes/notifications/tasks.tsx",
         "path": "notifications/tasks"
+      },
+      "routes/settings/booking": {
+        "id": "routes/settings/booking",
+        "parentId": "routes/index",
+        "file": "routes/settings/booking.tsx",
+        "path": "settings/booking"
+      },
+      "routes/reports/cars-overview": {
+        "id": "routes/reports/cars-overview",
+        "parentId": "routes/index",
+        "file": "routes/reports/cars-overview.tsx",
+        "path": "reports/cars-overview"
+      },
+      "routes/reports/customer-funnel": {
+        "id": "routes/reports/customer-funnel",
+        "parentId": "routes/index",
+        "file": "routes/reports/customer-funnel.tsx",
+        "path": "reports/customer-funnel"
+      },
+      "routes/reports/payment-analytics": {
+        "id": "routes/reports/payment-analytics",
+        "parentId": "routes/index",
+        "file": "routes/reports/payment-analytics.tsx",
+        "path": "reports/payment-analytics"
+      },
+      "routes/reports/search-demand": {
+        "id": "routes/reports/search-demand",
+        "parentId": "routes/index",
+        "file": "routes/reports/search-demand.tsx",
+        "path": "reports/search-demand"
+      },
+      "routes/reports/search-demand-location": {
+        "id": "routes/reports/search-demand-location",
+        "parentId": "routes/index",
+        "file": "routes/reports/search-demand-location.tsx",
+        "path": "reports/search-demand/location"
+      },
+      "routes/reports/user-location": {
+        "id": "routes/reports/user-location",
+        "parentId": "routes/index",
+        "file": "routes/reports/user-location.tsx",
+        "path": "reports/user-location"
       }
     },
     "routeDiscovery": {
@@ -522,6 +690,18 @@
           {
             "file": "routes/auth/logout.tsx",
             "path": "logout"
+          },
+          {
+            "file": "routes/api/customer-funnel-dropoffs.ts",
+            "path": "api/customer-funnel-dropoffs"
+          },
+          {
+            "file": "routes/api/payment-analytics-customers.ts",
+            "path": "api/payment-analytics-customers"
+          },
+          {
+            "file": "routes/api/search-location-detail.ts",
+            "path": "api/search-location-detail"
           },
           {
             "file": "routes/index.tsx",
@@ -587,6 +767,14 @@
                 "path": "customers"
               },
               {
+                "file": "routes/customers/funnel-dropoffs.tsx",
+                "path": "customers/funnel-dropoffs"
+              },
+              {
+                "file": "routes/customers/payment-analytics.tsx",
+                "path": "customers/payment-analytics"
+              },
+              {
                 "file": "routes/hosts/index.tsx",
                 "path": "hosts"
               },
@@ -645,6 +833,34 @@
               {
                 "file": "routes/notifications/tasks.tsx",
                 "path": "notifications/tasks"
+              },
+              {
+                "file": "routes/settings/booking.tsx",
+                "path": "settings/booking"
+              },
+              {
+                "file": "routes/reports/cars-overview.tsx",
+                "path": "reports/cars-overview"
+              },
+              {
+                "file": "routes/reports/customer-funnel.tsx",
+                "path": "reports/customer-funnel"
+              },
+              {
+                "file": "routes/reports/payment-analytics.tsx",
+                "path": "reports/payment-analytics"
+              },
+              {
+                "file": "routes/reports/search-demand.tsx",
+                "path": "reports/search-demand"
+              },
+              {
+                "file": "routes/reports/search-demand-location.tsx",
+                "path": "reports/search-demand/location"
+              },
+              {
+                "file": "routes/reports/user-location.tsx",
+                "path": "reports/user-location"
               }
             ]
           }

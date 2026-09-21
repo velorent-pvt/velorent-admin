@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { BellRing, Car, LogOut, ShieldCheck, Users, PieChart } from "lucide-react";
+import { BellRing, Car, LogOut, ShieldCheck, Users, PieChart, Settings } from "lucide-react";
 
 import {
   Sidebar,
@@ -84,10 +84,25 @@ const data = {
       ],
     },
     {
+      title: "Settings", url: "#", icon: Settings, items: [{ title: "Booking", url: "/settings/booking" }],
+    },
+    {
       title: "Reports",
       url: "#",
       icon: PieChart,
       items: [
+        {
+          title: "Customer Funnel",
+          url: "/reports/customer-funnel",
+        },
+        {
+          title: "Payment Analytics",
+          url: "/reports/payment-analytics",
+        },
+        {
+          title: "Search Demand",
+          url: "/reports/search-demand",
+        },
         {
           title: "Cars Overview",
           url: "/reports/cars-overview",

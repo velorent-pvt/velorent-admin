@@ -1,4 +1,5 @@
 import { supabase } from "~/lib/supabase";
+import type { Customer } from "~/features/customers/columns";
 
 const ROLE_HOST = 2;
 const ROLE_CUSTOMER = 3;
@@ -32,13 +33,40 @@ type HostProfileRow = {
   created_at: string;
 };
 
-export async function getAllCustomers() {
+export type CustomerFilters = {
+  search?: string;
+  fromDate?: string;
+  toDate?: string;
+};
+
+function toStartOfDay(date: string) {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  return result.toISOString();
+}
+
+function toEndOfDay(date: string) {
+  const result = new Date(date);
+  result.setHours(23, 59, 59, 999);
+  return result.toISOString();
+}
+
+function escapeLikeSearch(search: string) {
+  return search.replace(/\\/g, "\\\\").replace(/[%_]/g, "\\$&").replace(/[,()]/g, " ");
+}
+
+export async function getAllCustomers({
+  search,
+  fromDate,
+  toDate,
+}: CustomerFilters = {}) {
   const data: CustomerProfileRow[] = [];
   let from = 0;
+  const searchTerm = search?.trim();
 
   while (true) {
     const to = from + PROFILE_BATCH_SIZE - 1;
-    const { data: batch, error } = await supabase
+    let query = supabase
       .from("profiles")
       .select(
         `
@@ -57,7 +85,18 @@ export async function getAllCustomers() {
         )
       `,
       )
-      .eq("role_id", ROLE_CUSTOMER)
+      .eq("role_id", ROLE_CUSTOMER);
+
+    if (searchTerm) {
+      const value = escapeLikeSearch(searchTerm);
+      query = query.or(
+        `full_name.ilike.%${value}%,email.ilike.%${value}%,phone.ilike.%${value}%`,
+      );
+    }
+    if (fromDate) query = query.gte("created_at", toStartOfDay(fromDate));
+    if (toDate) query = query.lte("created_at", toEndOfDay(toDate));
+
+    const { data: batch, error } = await query
       .order("created_at", { ascending: false })
       .range(from, to);
 
@@ -110,4 +149,69 @@ export async function getAllHosts() {
   }
 
   return data;
+}
+
+type FunnelDropoffCustomer = Omit<
+  Customer,
+  "verification_completed" | "verification_total" | "verification_pending"
+>;
+
+type AnalyticsCustomer = FunnelDropoffCustomer;
+
+export async function getFunnelDropoffCustomers(
+  stageIndex: number,
+  startDate: string,
+  endDate: string,
+) {
+  const params = new URLSearchParams(
+    {
+      stage: String(stageIndex),
+      start: startDate,
+      end: endDate,
+    },
+  );
+  const response = await fetch(`/api/customer-funnel-dropoffs?${params}`);
+  const result = (await response.json()) as {
+    customers?: FunnelDropoffCustomer[];
+    error?: string;
+  };
+
+  if (!response.ok) throw new Error(result.error ?? "Unable to load funnel customers.");
+
+  return (result.customers ?? []).map((customer) => {
+    const completed = Number(Boolean(customer.aadhaar_number)) + Number(Boolean(customer.dl_number));
+    return {
+      ...customer,
+      created_at: customer.created_at ?? "",
+      verification_completed: completed,
+      verification_total: 2,
+      verification_pending: 2 - completed,
+    };
+  });
+}
+
+export async function getPaymentAnalyticsCustomers(
+  metric: string,
+  startDate: string,
+  endDate: string,
+) {
+  const params = new URLSearchParams({ metric, start: startDate, end: endDate });
+  const response = await fetch(`/api/payment-analytics-customers?${params}`);
+  const result = (await response.json()) as {
+    customers?: AnalyticsCustomer[];
+    error?: string;
+  };
+
+  if (!response.ok) throw new Error(result.error ?? "Unable to load payment customers.");
+
+  return (result.customers ?? []).map((customer) => {
+    const completed = Number(Boolean(customer.aadhaar_number)) + Number(Boolean(customer.dl_number));
+    return {
+      ...customer,
+      created_at: customer.created_at ?? "",
+      verification_completed: completed,
+      verification_total: 2,
+      verification_pending: 2 - completed,
+    };
+  });
 }
