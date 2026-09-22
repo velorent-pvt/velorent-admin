@@ -137,10 +137,10 @@ export default function SearchDemandReport() {
     () => [
       {
         accessorKey: "location",
-        header: "Location",
+        header: "Search term",
         cell: ({ row }) => (
           <Link
-            className="font-semibold capitalize text-blue-600 hover:underline"
+            className="font-semibold text-blue-600 hover:underline"
             to={`/reports/search-demand/location?name=${encodeURIComponent(row.original.location)}&start=${startDate}&end=${endDate}`}
           >
             {row.original.location}
@@ -151,11 +151,6 @@ export default function SearchDemandReport() {
         accessorKey: "searches",
         header: "Searches",
         cell: ({ row }) => row.original.searches.toLocaleString(),
-      },
-      {
-        accessorKey: "unique_customers",
-        header: "Customers",
-        cell: ({ row }) => row.original.unique_customers.toLocaleString(),
       },
       {
         accessorKey: "no_result_rate",
@@ -178,11 +173,6 @@ export default function SearchDemandReport() {
         cell: ({ row }) => row.original.average_results.toFixed(1),
       },
       {
-        accessorKey: "available_vehicles",
-        header: "Active vehicles",
-        cell: ({ row }) => row.original.available_vehicles.toLocaleString(),
-      },
-      {
         id: "trend",
         accessorFn: (row) =>
           row.previous_searches === 0
@@ -199,14 +189,12 @@ export default function SearchDemandReport() {
       },
       {
         id: "status",
-        header: "Demand signal",
+        header: "Search outcome",
         cell: ({ row }) => {
-          const gap =
-            row.original.no_result_rate >= 25 ||
-            (row.original.average_results < 3 && row.original.searches >= 5);
+          const hasNoResults = row.original.no_result_rate > 0;
           return (
-            <Badge variant={gap ? "destructive" : "secondary"}>
-              {gap ? "Supply gap" : "Healthy"}
+            <Badge variant={hasNoResults ? "destructive" : "secondary"}>
+              {hasNoResults ? "No results" : "-"}
             </Badge>
           );
         },
@@ -222,8 +210,7 @@ export default function SearchDemandReport() {
         <div>
           <h1 className="text-2xl font-bold">Search Demand</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Identify where customer demand is strongest and vehicle supply is
-            insufficient.
+            See what customers search for and which searches return no results.
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
@@ -275,16 +262,15 @@ export default function SearchDemandReport() {
           <DataTable
             data={report.locations}
             columns={columns}
-            title="Demand by location"
+            title="Search terms"
             showTitle={false}
             searchColumn="location"
-            searchPlaceholder="Search location..."
+            searchPlaceholder="Filter search terms..."
             showPageSizeSelector
             defaultSort={{ column: "searches", direction: "desc" }}
             sortOptions={[
               { label: "Search volume", column: "searches" },
               { label: "No-result rate", column: "no_result_rate" },
-              { label: "Active vehicles", column: "available_vehicles" },
               { label: "Trend", column: "trend" },
             ]}
           />

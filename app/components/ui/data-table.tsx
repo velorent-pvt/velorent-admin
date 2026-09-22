@@ -3,6 +3,8 @@ import {
   type ColumnFiltersState,
   type SortingState,
   type VisibilityState,
+  type PaginationState,
+  type Updater,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -29,7 +31,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type DataTableSortOption = {
@@ -68,6 +71,7 @@ interface DataTableProps<TData, TValue> {
   };
   filters?: DataTableFilter[];
   hiddenColumns?: string[];
+  paginationKey?: string;
 }
 
 export function DataTable<TData, TValue>({
@@ -86,7 +90,30 @@ export function DataTable<TData, TValue>({
   defaultSort,
   filters = [],
   hiddenColumns = [],
+  paginationKey = title,
 }: DataTableProps<TData, TValue>) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const pageKey = `table.${paginationKey}.page`;
+  const sizeKey = `table.${paginationKey}.size`;
+  const requestedPage = Number(searchParams.get(pageKey) ?? 1);
+  const requestedSize = Number(searchParams.get(sizeKey) ?? pageSize);
+  const pagination: PaginationState = {
+    pageIndex: Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage - 1 : 0,
+    pageSize: Number.isSafeInteger(requestedSize) && requestedSize > 0 &&
+      (requestedSize === pageSize || pageSizeOptions.includes(requestedSize)) ? requestedSize : pageSize,
+  };
+  const updatePagination = (updater: Updater<PaginationState>, replace = false) => {
+    const next = typeof updater === "function" ? updater(pagination) : updater;
+    if (next.pageIndex === pagination.pageIndex && next.pageSize === pagination.pageSize) return;
+    setSearchParams((current) => {
+      const params = new URLSearchParams(current);
+      if (next.pageIndex === 0) params.delete(pageKey);
+      else params.set(pageKey, String(next.pageIndex + 1));
+      if (next.pageSize === pageSize) params.delete(sizeKey);
+      else params.set(sizeKey, String(next.pageSize));
+      return params;
+    }, { replace, preventScrollReset: true });
+  };
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState({});
   const [sorting, setSorting] = useState<SortingState>(() => {
@@ -120,8 +147,14 @@ export function DataTable<TData, TValue>({
       rowSelection,
       sorting,
       columnVisibility,
+      pagination,
     },
-    onColumnFiltersChange: setColumnFilters,
+    onPaginationChange: updatePagination,
+    autoResetPageIndex: false,
+    onColumnFiltersChange: (updater) => {
+      setColumnFilters(updater);
+      updatePagination({ ...pagination, pageIndex: 0 }, true);
+    },
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
@@ -136,6 +169,15 @@ export function DataTable<TData, TValue>({
 
   const currentSortColumn = sorting[0]?.id ?? "";
   const currentSortDirection = sorting[0]?.desc ? "desc" : "asc";
+  const filteredRowCount = table.getFilteredRowModel().rows.length;
+  const lastPageIndex = Math.max(0, Math.ceil(filteredRowCount / pagination.pageSize) - 1);
+
+  useEffect(() => {
+    // An empty array can be a temporary loading state; preserve the saved page.
+    if (data.length > 0 && pagination.pageIndex > lastPageIndex) {
+      updatePagination({ ...pagination, pageIndex: lastPageIndex }, true);
+    }
+  }, [data.length, pagination.pageIndex, pagination.pageSize, lastPageIndex]);
 
   return (
     <div>
@@ -303,8 +345,7 @@ export function DataTable<TData, TValue>({
                   <Select
                     value={`${table.getState().pagination.pageSize}`}
                     onValueChange={(value) => {
-                      table.setPageSize(Number(value));
-                      table.setPageIndex(0);
+                      table.setPagination({ pageIndex: 0, pageSize: Number(value) });
                     }}
                   >
                     <SelectTrigger className="w-[90px] bg-card">

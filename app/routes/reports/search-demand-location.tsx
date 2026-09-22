@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link, useSearchParams } from "react-router";
-import { ArrowLeft, Car, Search, Users, XCircle } from "lucide-react";
+import { ArrowLeft, Search, Users, XCircle } from "lucide-react";
 import {
   CartesianGrid,
   Line,
@@ -87,14 +87,14 @@ export default function SearchDemandLocation() {
   if (!valid)
     return (
       <div className="flex min-h-64 items-center justify-center p-6 text-sm text-red-600">
-        Invalid location selection.
+        Invalid search term selection.
       </div>
     );
   if (isLoading) return <Loader />;
   if (isError || !data)
     return (
       <div className="flex min-h-64 items-center justify-center p-6 text-sm text-red-600">
-        Unable to load location detail.
+        Unable to load search term details.
       </div>
     );
 
@@ -107,12 +107,12 @@ export default function SearchDemandLocation() {
             Back to search demand
           </Link>
         </Button>
-        <h1 className="mt-2 text-2xl font-bold capitalize">{location}</h1>
+        <h1 className="mt-2 text-2xl font-bold">{location}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Demand and customer search behavior for this location.
+          Customer search activity for this search term.
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <Metric label="Searches" value={totalSearches} icon={Search} />
         <Metric
           label="Unique customers"
@@ -120,11 +120,6 @@ export default function SearchDemandLocation() {
           icon={Users}
         />
         <Metric label="No-result searches" value={noResults} icon={XCircle} />
-        <Metric
-          label="Active vehicles"
-          value={Number(data.available_vehicles)}
-          icon={Car}
-        />
       </div>
       <Card className="shadow-none">
         <CardHeader>
@@ -174,7 +169,7 @@ export default function SearchDemandLocation() {
       <CustomerList
         initialCustomers={customers}
         columns={searchCustomerColumns}
-        title="Customers searching this location"
+        title="Customers using this search term"
       />
     </div>
   );

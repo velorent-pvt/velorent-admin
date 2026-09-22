@@ -8,7 +8,7 @@ import {
 export default [
   route("login", "routes/auth/login.tsx"),
   route("logout", "routes/auth/logout.tsx"),
-  route("api/customer-funnel-dropoffs", "routes/api/customer-funnel-dropoffs.ts"),
+  route("api/customer-funnel-stages", "routes/api/customer-funnel-stages.ts"),
   route("api/payment-analytics-customers", "routes/api/payment-analytics-customers.ts"),
   route("api/search-location-detail", "routes/api/search-location-detail.ts"),
 
@@ -33,7 +33,7 @@ export default [
     route("pending/verifications", "routes/pending/verifications.tsx"),
 
     route("customers", "routes/customers/index.tsx"),
-    route("customers/funnel-dropoffs", "routes/customers/funnel-dropoffs.tsx"),
+    route("customers/funnel-stages", "routes/customers/funnel-stages.tsx"),
     route("customers/payment-analytics", "routes/customers/payment-analytics.tsx"),
     route("hosts", "routes/hosts/index.tsx"),
 

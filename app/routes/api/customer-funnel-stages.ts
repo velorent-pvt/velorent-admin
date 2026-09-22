@@ -27,7 +27,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const headers = new Headers();
   const supabase = await createClient(request, { headers } as Response);
   const { data, error } = await supabase.rpc(
-    "get_customer_funnel_dropoff_customers" as never,
+    "get_customer_funnel_stage_customer_vehicles" as never,
     {
       p_start_at: start.toISOString(),
       p_end_at: end.toISOString(),
@@ -36,7 +36,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   );
 
   if (error) {
-    console.error("Failed to load funnel drop-off customers:", error);
+    console.error("Failed to load funnel stage customers:", error);
     return Response.json(
       { error: "Unable to load customers for this funnel stage." },
       { status: error.code === "42501" ? 403 : 500, headers },

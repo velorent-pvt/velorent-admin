@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { createClient } from "~/lib/supabase.server";
-import { CUSTOMER_FUNNEL_STAGE_LABELS } from "~/lib/customer-funnel";
+import { CUSTOMER_FUNNEL_STAGE_LABELS, getFunnelStageMetrics } from "~/lib/customer-funnel";
 
 type FunnelRow = {
   stage_index: number;
@@ -35,7 +35,7 @@ type FunnelStage = FunnelRow & {
   stageLabel: string;
   stageConversion: number | null;
   dropped: number | null;
-  dropRate: number | null;
+  optional: boolean;
   funnelShare: number;
 };
 
@@ -161,38 +161,14 @@ export default function CustomerFunnelReport() {
     );
   }, [endDate, startDate]);
 
-  const first = rows[0]?.current_customers ?? 0;
   const stages = useMemo<FunnelStage[]>(
-    () =>
-      rows.map((row, index) => {
-        const previousStage =
-          rows[index - 1]?.current_customers ?? row.current_customers;
-        const dropped =
-          index === 0
-            ? null
-            : Math.max(0, previousStage - row.current_customers);
-        return {
-          ...row,
-          stageLabel:
-            CUSTOMER_FUNNEL_STAGE_LABELS[row.stage_index] ?? row.event_name,
-          stageConversion:
-            index === 0
-              ? null
-              : previousStage > 0
-                ? (row.current_customers / previousStage) * 100
-                : 0,
-          dropped,
-          dropRate:
-            index === 0 || previousStage === 0 || dropped === null
-              ? null
-              : (dropped / previousStage) * 100,
-          funnelShare:
-            first > 0 ? Math.max(2, (row.current_customers / first) * 100) : 0,
-        };
-      }),
-    [first, rows],
+    () => rows.map((row) => ({
+      ...row,
+      ...getFunnelStageMetrics(row, rows),
+      stageLabel: CUSTOMER_FUNNEL_STAGE_LABELS[row.stage_index] ?? row.event_name,
+    })),
+    [rows],
   );
-
   const applyPreset = (days: PresetDays) => {
     const range = presetRange(days);
     setSearchParams({ start: range.start, end: range.end });
@@ -204,7 +180,7 @@ export default function CustomerFunnelReport() {
         <div>
           <h1 className="text-2xl font-bold">Customer Funnel</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Unique customers progressing through the booking journey in order.
+            Unique customers in the booking journey. Search and KYC are optional actions.
           </p>
         </div>
 
@@ -259,7 +235,7 @@ export default function CustomerFunnelReport() {
             {stages.map((stage) => (
               <Link
                 key={stage.stage_index}
-                to={`/customers/funnel-dropoffs?stage=${stage.stage_index}&start=${startDate}&end=${endDate}`}
+                to={`/customers/funnel-stages?stage=${stage.stage_index}&start=${startDate}&end=${endDate}`}
                 className="group block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <Card className="h-full border bg-card shadow-none transition-all duration-200">
@@ -269,6 +245,9 @@ export default function CustomerFunnelReport() {
                         {stage.stageLabel}
                       </h3>
                     </div>
+                    {stage.optional && (
+                      <p className="mt-1 text-xs text-muted-foreground">Optional action</p>
+                    )}
 
                     <div className="mt-5">
                       <p className="text-xs font-medium text-muted-foreground">
