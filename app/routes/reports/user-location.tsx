@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Search } from "lucide-react";
+import { MapPin, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "~/components/ui/input-group";
-import { supabase } from "~/lib/supabase";
+import { data as routeData, useFetcher, type LoaderFunctionArgs } from "react-router";
+import { createClient } from "~/lib/supabase.server";
 import "leaflet/dist/leaflet.css";
 
 type Movement = {
@@ -11,68 +12,55 @@ type Movement = {
   locations: Array<{ latitude: number; longitude: number; recordedAt: string }>;
 };
 
-const DUMMY_MOVEMENT: Movement = {
-  name: "Demo Customer",
-  bookingCode: "DEMO1234",
-  locations: [
-    { latitude: 23.0225, longitude: 72.5714, recordedAt: "2026-08-30T09:00:00+05:30" },
-    { latitude: 23.0268, longitude: 72.5792, recordedAt: "2026-08-30T09:30:00+05:30" },
-    { latitude: 23.0332, longitude: 72.5886, recordedAt: "2026-08-30T10:00:00+05:30" },
-    { latitude: 23.0414, longitude: 72.5981, recordedAt: "2026-08-30T10:30:00+05:30" },
-  ],
-};
+const EMPTY_MESSAGE = "Enter a booking code to view its location history.";
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const code = (new URL(request.url).searchParams.get("bookingCode") ?? "").trim().replace(/^#/, "").toUpperCase();
+  const headers = new Headers();
+  const result = (movement: Movement | null, message = "") => routeData({ movement, message }, { headers });
+  if (!code) return result(null, EMPTY_MESSAGE);
+
+  try {
+    const supabase = await createClient(request, { headers } as Response);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return result(null, "Your session has expired. Please sign in again.");
+
+    const { data: bookings, error: bookingError } = await supabase.rpc(
+      "find_booking_by_code",
+      { p_booking_code: code },
+    );
+    if (bookingError) throw bookingError;
+    const booking = bookings?.[0] ?? null;
+    if (!booking) return result(null, `Booking #${code} was not found.`);
+
+    const [{ data: rows, error }, { data: profile }] = await Promise.all([
+      supabase.from("booking_location_updates").select("latitude, longitude, recorded_at").eq("booking_id", booking.id).order("recorded_at"),
+      supabase.from("profiles").select("full_name").eq("id", booking.customer_id).maybeSingle(),
+    ]);
+    if (error) throw error;
+    if (!rows?.length) return result(null, `No location updates have been recorded for #${code}.`);
+
+    return result({
+      name: profile?.full_name || "Customer",
+      bookingCode: booking.booking_code,
+      locations: rows.map((row) => ({ latitude: Number(row.latitude), longitude: Number(row.longitude), recordedAt: row.recorded_at })),
+    });
+  } catch (error) {
+    console.error("Failed to load booking locations:", error);
+    return result(null, "Unable to load location history for this booking.");
+  }
+}
 
 export default function UserLocation() {
   const mapRef = useRef<HTMLDivElement>(null);
   const [bookingCode, setBookingCode] = useState("");
-  const [movement, setMovement] = useState<Movement | null>(DUMMY_MOVEMENT);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const fetcher = useFetcher<typeof loader>();
+  const loading = fetcher.state !== "idle";
+  const movement = loading ? null : fetcher.data?.movement ?? null;
+  const message = fetcher.data?.message ?? EMPTY_MESSAGE;
 
-  async function findBooking() {
-    const code = bookingCode.trim().replace(/^#/, "").toUpperCase();
-    if (!code) {
-      setMovement(DUMMY_MOVEMENT);
-      setMessage("");
-      return;
-    }
-    setLoading(true);
-    setMovement(null);
-
-    try {
-      const { data: bookings, error: bookingError } = await supabase.rpc(
-        "find_booking_by_code",
-        { p_booking_code: code },
-      );
-      const booking = bookings?.[0] ?? null;
-      if (bookingError) throw bookingError;
-      if (!booking) {
-        setMessage(`Booking #${code} was not found.`);
-        return;
-      }
-
-      const [{ data: rows, error }, { data: profile }] = await Promise.all([
-        supabase.from("booking_location_updates").select("latitude, longitude, recorded_at").eq("booking_id", booking.id).order("recorded_at"),
-        supabase.from("profiles").select("full_name").eq("id", booking.customer_id).maybeSingle(),
-      ]);
-      if (error) throw error;
-      if (!rows?.length) {
-        setMessage(`No location updates have been recorded for #${code}.`);
-        return;
-      }
-
-      setMovement({
-        name: profile?.full_name || "Customer",
-        bookingCode: booking.booking_code,
-        locations: rows.map((row) => ({ latitude: Number(row.latitude), longitude: Number(row.longitude), recordedAt: row.recorded_at })),
-      });
-      setMessage("");
-    } catch (error) {
-      console.error("Failed to load booking locations:", error);
-      setMessage("Unable to load location history for this booking.");
-    } finally {
-      setLoading(false);
-    }
+  function findBooking() {
+    void fetcher.load(`?${new URLSearchParams({ bookingCode })}`);
   }
 
   useEffect(() => {
@@ -146,15 +134,21 @@ export default function UserLocation() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-sm font-semibold">
             User Movement Map
-            {movement?.bookingCode === DUMMY_MOVEMENT.bookingCode ? (
-              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600">
-                Demo data
-              </span>
-            ) : null}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {movement ? <div ref={mapRef} className="h-[600px] w-full" /> : <div className="flex h-[600px] items-center justify-center text-sm text-muted-foreground">{loading ? "Loading location history…" : message}</div>}
+          {movement ? (
+            <div ref={mapRef} className="h-[600px] w-full" />
+          ) : (
+            <div className="flex h-[600px] flex-col items-center justify-center gap-4 px-6 text-center text-sm text-muted-foreground">
+              {!loading && (
+                <div className="flex size-16 items-center justify-center rounded-full bg-muted">
+                  <MapPin className="size-8" strokeWidth={1.5} aria-hidden="true" />
+                </div>
+              )}
+              <p>{loading ? "Loading location history?" : message}</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
