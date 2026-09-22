@@ -151,14 +151,14 @@ export async function getAllHosts() {
   return data;
 }
 
-type FunnelDropoffCustomer = Omit<
+type FunnelStageCustomer = Omit<
   Customer,
   "verification_completed" | "verification_total" | "verification_pending"
 >;
 
-type AnalyticsCustomer = FunnelDropoffCustomer;
+type AnalyticsCustomer = FunnelStageCustomer;
 
-export async function getFunnelDropoffCustomers(
+export async function getFunnelStageCustomers(
   stageIndex: number,
   startDate: string,
   endDate: string,
@@ -170,9 +170,9 @@ export async function getFunnelDropoffCustomers(
       end: endDate,
     },
   );
-  const response = await fetch(`/api/customer-funnel-dropoffs?${params}`);
+  const response = await fetch(`/api/customer-funnel-stages?${params}`);
   const result = (await response.json()) as {
-    customers?: FunnelDropoffCustomer[];
+    customers?: FunnelStageCustomer[];
     error?: string;
   };
 

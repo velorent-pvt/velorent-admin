@@ -1,11 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
 import { useSearchParams } from "react-router";
 
 import { getPaymentAnalyticsCustomers } from "~/api/customer";
 import { Loader } from "~/components/shared/Loader";
 import { CustomerList } from "~/features/customers/customer-list";
-import { customerColumns, type Customer } from "~/features/customers/columns";
+import { vehicleColumns as paymentCustomerColumns } from "~/features/customers/vehicle-columns";
 import {
   PAYMENT_ANALYTICS_LABELS,
   PAYMENT_ANALYTICS_METRICS,
@@ -15,17 +14,6 @@ function validDate(value: string | null) {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
-const paymentCustomerColumns: ColumnDef<Customer>[] = [
-  ...customerColumns.slice(0, 4),
-  {
-    accessorKey: "vehicle_names",
-    header: "Vehicle",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.vehicle_names || "-"}</span>
-    ),
-  },
-  ...customerColumns.slice(4),
-];
 
 export default function PaymentAnalyticsCustomers() {
   const [searchParams] = useSearchParams();

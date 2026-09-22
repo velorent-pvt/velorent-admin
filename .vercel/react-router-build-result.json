@@ -13,7 +13,7 @@
       "root": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/auth/login": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/auth/logout": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
-      "routes/api/customer-funnel-dropoffs": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/api/customer-funnel-stages": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/api/payment-analytics-customers": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/api/search-location-detail": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/home": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
@@ -31,7 +31,7 @@
       "routes/pending/review": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/pending/verifications": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/customers/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
-      "routes/customers/funnel-dropoffs": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/customers/funnel-stages": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/customers/payment-analytics": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/hosts/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/bookings/index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
@@ -79,11 +79,11 @@
         "path": "logout",
         "config": {}
       },
-      "routes/api/customer-funnel-dropoffs": {
-        "id": "routes/api/customer-funnel-dropoffs",
+      "routes/api/customer-funnel-stages": {
+        "id": "routes/api/customer-funnel-stages",
         "parentId": "root",
-        "file": "app/routes/api/customer-funnel-dropoffs.ts",
-        "path": "api/customer-funnel-dropoffs",
+        "file": "app/routes/api/customer-funnel-stages.ts",
+        "path": "api/customer-funnel-stages",
         "config": {}
       },
       "routes/api/payment-analytics-customers": {
@@ -211,11 +211,11 @@
         "path": "customers",
         "config": {}
       },
-      "routes/customers/funnel-dropoffs": {
-        "id": "routes/customers/funnel-dropoffs",
+      "routes/customers/funnel-stages": {
+        "id": "routes/customers/funnel-stages",
         "parentId": "routes/index",
-        "file": "app/routes/customers/funnel-dropoffs.tsx",
-        "path": "customers/funnel-dropoffs",
+        "file": "app/routes/customers/funnel-stages.tsx",
+        "path": "customers/funnel-stages",
         "config": {}
       },
       "routes/customers/payment-analytics": {
@@ -411,11 +411,11 @@
         "file": "routes/auth/logout.tsx",
         "path": "logout"
       },
-      "routes/api/customer-funnel-dropoffs": {
-        "id": "routes/api/customer-funnel-dropoffs",
+      "routes/api/customer-funnel-stages": {
+        "id": "routes/api/customer-funnel-stages",
         "parentId": "root",
-        "file": "routes/api/customer-funnel-dropoffs.ts",
-        "path": "api/customer-funnel-dropoffs"
+        "file": "routes/api/customer-funnel-stages.ts",
+        "path": "api/customer-funnel-stages"
       },
       "routes/api/payment-analytics-customers": {
         "id": "routes/api/payment-analytics-customers",
@@ -524,11 +524,11 @@
         "file": "routes/customers/index.tsx",
         "path": "customers"
       },
-      "routes/customers/funnel-dropoffs": {
-        "id": "routes/customers/funnel-dropoffs",
+      "routes/customers/funnel-stages": {
+        "id": "routes/customers/funnel-stages",
         "parentId": "routes/index",
-        "file": "routes/customers/funnel-dropoffs.tsx",
-        "path": "customers/funnel-dropoffs"
+        "file": "routes/customers/funnel-stages.tsx",
+        "path": "customers/funnel-stages"
       },
       "routes/customers/payment-analytics": {
         "id": "routes/customers/payment-analytics",
@@ -692,8 +692,8 @@
             "path": "logout"
           },
           {
-            "file": "routes/api/customer-funnel-dropoffs.ts",
-            "path": "api/customer-funnel-dropoffs"
+            "file": "routes/api/customer-funnel-stages.ts",
+            "path": "api/customer-funnel-stages"
           },
           {
             "file": "routes/api/payment-analytics-customers.ts",
@@ -767,8 +767,8 @@
                 "path": "customers"
               },
               {
-                "file": "routes/customers/funnel-dropoffs.tsx",
-                "path": "customers/funnel-dropoffs"
+                "file": "routes/customers/funnel-stages.tsx",
+                "path": "customers/funnel-stages"
               },
               {
                 "file": "routes/customers/payment-analytics.tsx",

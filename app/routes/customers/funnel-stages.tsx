@@ -1,16 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
+import { customerColumns } from "~/features/customers/columns";
 
-import { getFunnelDropoffCustomers } from "~/api/customer";
+import { getFunnelStageCustomers } from "~/api/customer";
 import { Loader } from "~/components/shared/Loader";
 import { CustomerList } from "~/features/customers/customer-list";
 import { CUSTOMER_FUNNEL_STAGE_LABELS } from "~/lib/customer-funnel";
+import { vehicleColumns } from "~/features/customers/vehicle-columns";
 
 function validDate(value: string | null) {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
-export default function FunnelDropoffCustomers() {
+export default function FunnelStageCustomers() {
   const [searchParams] = useSearchParams();
   const stageIndex = Number(searchParams.get("stage"));
   const startDate = validDate(searchParams.get("start"));
@@ -28,15 +30,12 @@ export default function FunnelDropoffCustomers() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["customer-funnel-dropoffs", stageIndex, startDate, endDate],
-    queryFn: () => getFunnelDropoffCustomers(stageIndex, startDate!, endDate!),
+    queryKey: ["customer-funnel-stages", stageIndex, startDate, endDate],
+    queryFn: () => getFunnelStageCustomers(stageIndex, startDate!, endDate!),
     enabled: validSelection,
   });
   const stageLabel = CUSTOMER_FUNNEL_STAGE_LABELS[stageIndex];
-  const title =
-    stageIndex === 10
-      ? "Booking confirmed customers"
-      : `Dropped after ${stageLabel}`;
+  const title = `${stageLabel} customers`;
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 p-4 md:p-6">
@@ -51,7 +50,11 @@ export default function FunnelDropoffCustomers() {
           Unable to load customers for this funnel stage.
         </div>
       ) : (
-        <CustomerList initialCustomers={customers} title={title} />
+        <CustomerList
+          initialCustomers={customers}
+          title={title}
+          columns={[4, 5, 8, 9, 10].includes(stageIndex) ? vehicleColumns : customerColumns}
+        />
       )}
     </div>
   );
