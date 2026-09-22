@@ -28,7 +28,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const headers = new Headers();
   const supabase = await createClient(request, { headers } as Response);
   const { data, error } = await supabase.rpc(
-    "get_payment_analytics_customer_vehicles" as never,
+    "get_payment_analytics_customer_attempts" as never,
     {
       p_start_at: start.toISOString(),
       p_end_at: end.toISOString(),

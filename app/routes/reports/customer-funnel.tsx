@@ -245,9 +245,6 @@ export default function CustomerFunnelReport() {
                         {stage.stageLabel}
                       </h3>
                     </div>
-                    {stage.optional && (
-                      <p className="mt-1 text-xs text-muted-foreground">Optional action</p>
-                    )}
 
                     <div className="mt-5">
                       <p className="text-xs font-medium text-muted-foreground">
