@@ -18,6 +18,7 @@ export type Customer = {
   verification_total: number;
   verification_pending: number;
   vehicle_names?: string | null;
+  attempt_count?: number;
   vehicles?: { id: string; name: string | null; registration_number: string | null }[];
   search_count?: number;
   no_result_count?: number;
