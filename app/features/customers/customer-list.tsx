@@ -14,10 +14,16 @@ export function CustomerList({
   initialCustomers,
   title = "Customers",
   columns = customerColumns,
+  actionRange,
 }: {
   initialCustomers?: Customer[];
   title?: string;
   columns?: ColumnDef<Customer>[];
+  actionRange?: {
+    start: string;
+    end: string;
+    onChange: (field: "start" | "end", value: string) => void;
+  };
 } = {}) {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -39,6 +45,7 @@ export function CustomerList({
   const filteredInitialCustomers = useMemo(() => {
     if (initialCustomers === undefined) return customers ?? [];
     const items = initialCustomers ?? customers ?? [];
+    if (actionRange) return items;
 
     const from = fromDate ? new Date(fromDate) : undefined;
     const to = toDate ? new Date(toDate) : undefined;
@@ -53,7 +60,7 @@ export function CustomerList({
       if (to && joinedAt > to) return false;
       return true;
     });
-  }, [customers, fromDate, initialCustomers, toDate]);
+  }, [customers, fromDate, initialCustomers, toDate, actionRange]);
 
   if (initialCustomers === undefined && isLoading) return <Loader />;
 
@@ -64,20 +71,20 @@ export function CustomerList({
         <div className="flex flex-wrap items-center gap-2">
           <div className="w-44">
             <DatePicker
-              value={fromDate}
-              onChange={setFromDate}
-              placeholder="Joined from"
+              value={actionRange ? `${actionRange.start}T00:00:00` : fromDate}
+              onChange={actionRange ? (value) => { if (value) actionRange.onChange("start", value); } : setFromDate}
+              placeholder={actionRange ? "Action from" : "Joined from"}
             />
           </div>
           <div className="w-44">
             <DatePicker
-              value={toDate}
-              onChange={setToDate}
-              placeholder="Joined to"
-              minDate={fromDate ? new Date(fromDate) : undefined}
+              value={actionRange ? `${actionRange.end}T00:00:00` : toDate}
+              onChange={actionRange ? (value) => { if (value) actionRange.onChange("end", value); } : setToDate}
+              placeholder={actionRange ? "Action to" : "Joined to"}
+              minDate={actionRange ? new Date(`${actionRange.start}T00:00:00`) : fromDate ? new Date(fromDate) : undefined}
             />
           </div>
-          {(fromDate || toDate) && (
+          {!actionRange && (fromDate || toDate) && (
             <Button
               variant="outline"
               onClick={() => {
@@ -108,6 +115,7 @@ export function CustomerList({
         title="Customers"
         showHeader={false}
         showPageSizeSelector
+        defaultSort={actionRange ? { column: "action_at", direction: "desc" } : undefined}
       />
     </div>
   );

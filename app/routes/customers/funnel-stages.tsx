@@ -1,22 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
-import { customerColumns } from "~/features/customers/columns";
+import { actionColumns, actionVehicleColumns } from "~/features/customers/action-columns";
+import { getActionDateRange, updateActionDateRange } from "~/lib/analytics-actions";
 
 import { getFunnelStageCustomers } from "~/api/customer";
 import { Loader } from "~/components/shared/Loader";
 import { CustomerList } from "~/features/customers/customer-list";
 import { CUSTOMER_FUNNEL_STAGE_LABELS } from "~/lib/customer-funnel";
-import { vehicleColumns } from "~/features/customers/vehicle-columns";
 
 function validDate(value: string | null) {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
 export default function FunnelStageCustomers() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const range = getActionDateRange(searchParams);
   const stageIndex = Number(searchParams.get("stage"));
-  const startDate = validDate(searchParams.get("start"));
-  const endDate = validDate(searchParams.get("end"));
+  const startDate = validDate(range.start);
+  const endDate = validDate(range.end);
   const validSelection = Boolean(
     Number.isInteger(stageIndex) &&
     stageIndex >= 1 &&
@@ -53,7 +54,8 @@ export default function FunnelStageCustomers() {
         <CustomerList
           initialCustomers={customers}
           title={title}
-          columns={[4, 5, 8, 9, 10].includes(stageIndex) ? vehicleColumns : customerColumns}
+          columns={[4, 5, 8, 9, 10].includes(stageIndex) ? actionVehicleColumns : actionColumns}
+          actionRange={{ ...range, onChange: (field, value) => setSearchParams(updateActionDateRange(searchParams, field, value)) }}
         />
       )}
     </div>
