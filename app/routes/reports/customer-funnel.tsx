@@ -39,7 +39,7 @@ type FunnelStage = FunnelRow & {
   funnelShare: number;
 };
 
-type PresetDays = 7 | 30 | 90;
+type PresetDays = 1 | 7 | 30 | 90;
 
 function toDateInput(date: Date) {
   const year = date.getFullYear();
@@ -57,7 +57,7 @@ function presetRange(days: PresetDays) {
 
 function parseRange(request: Request) {
   const url = new URL(request.url);
-  const fallback = presetRange(30);
+  const fallback = presetRange(1);
   let startDate = url.searchParams.get("start") ?? fallback.start;
   let endDate = url.searchParams.get("end") ?? fallback.end;
   let start = new Date(`${startDate}T00:00:00`);

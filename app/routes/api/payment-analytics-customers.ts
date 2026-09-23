@@ -2,6 +2,7 @@ import type { LoaderFunctionArgs } from "react-router";
 
 import { PAYMENT_ANALYTICS_METRICS } from "~/lib/payment-analytics";
 import { createClient } from "~/lib/supabase.server";
+import { loadAllAnalyticsActions } from "~/lib/analytics-actions";
 
 function validDate(value: string | null) {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
@@ -27,14 +28,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const headers = new Headers();
   const supabase = await createClient(request, { headers } as Response);
-  const { data, error } = await supabase.rpc(
-    "get_payment_analytics_customer_attempts" as never,
+  const { data, error } = await loadAllAnalyticsActions((from, to) => supabase.rpc(
+    "get_payment_analytics_actions" as never,
     {
       p_start_at: start.toISOString(),
       p_end_at: end.toISOString(),
       p_metric_key: metric,
     } as never,
-  );
+  ).range(from, to));
 
   if (error) {
     console.error("Failed to load payment analytics customers:", error);

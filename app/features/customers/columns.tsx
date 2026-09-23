@@ -10,6 +10,8 @@ export type Customer = {
   avatar_url: string | null;
   role_id: number | null;
   created_at: string;
+  action_at?: string;
+  action_id?: string;
   aadhaar_name: string | null;
   aadhaar_number: string | null;
   dl_name: string | null;

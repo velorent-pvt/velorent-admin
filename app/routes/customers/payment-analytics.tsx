@@ -4,9 +4,8 @@ import { useSearchParams } from "react-router";
 import { getPaymentAnalyticsCustomers } from "~/api/customer";
 import { Loader } from "~/components/shared/Loader";
 import { CustomerList } from "~/features/customers/customer-list";
-import { vehicleColumns } from "~/features/customers/vehicle-columns";
-import type { ColumnDef } from "@tanstack/react-table";
-import type { Customer } from "~/features/customers/columns";
+import { actionVehicleColumns } from "~/features/customers/action-columns";
+import { getActionDateRange, updateActionDateRange } from "~/lib/analytics-actions";
 import {
   PAYMENT_ANALYTICS_LABELS,
   PAYMENT_ANALYTICS_METRICS,
@@ -16,22 +15,12 @@ function validDate(value: string | null) {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
-const paymentCustomerColumns: ColumnDef<Customer>[] = [
-  ...vehicleColumns.slice(0, -1),
-  {
-    accessorKey: "attempt_count",
-    header: "Attempts",
-    cell: ({ row }) => row.original.attempt_count?.toLocaleString() ?? "-",
-  },
-  ...vehicleColumns.slice(-1),
-];
-
-
 export default function PaymentAnalyticsCustomers() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const range = getActionDateRange(searchParams);
   const metric = searchParams.get("metric");
-  const startDate = validDate(searchParams.get("start"));
-  const endDate = validDate(searchParams.get("end"));
+  const startDate = validDate(range.start);
+  const endDate = validDate(range.end);
   const validSelection = Boolean(
     metric &&
     PAYMENT_ANALYTICS_METRICS.includes(metric) &&
@@ -66,10 +55,11 @@ export default function PaymentAnalyticsCustomers() {
         <CustomerList
           initialCustomers={customers}
           title={`${PAYMENT_ANALYTICS_LABELS[metric!]} customers`}
-          columns={paymentCustomerColumns}
+          columns={actionVehicleColumns}
+          actionRange={{ ...range, onChange: (field, value) => setSearchParams(updateActionDateRange(searchParams, field, value)) }}
         />
         <p className="text-sm text-muted-foreground">
-          {customers.reduce((sum, customer) => sum + Number(customer.attempt_count ?? 0), 0).toLocaleString()} attempts by {customers.length.toLocaleString()} customers in the selected period.
+          {customers.length.toLocaleString()} attempts by {new Set(customers.map((customer) => customer.id)).size.toLocaleString()} customers in the selected period.
         </p>
         </>
       )}
