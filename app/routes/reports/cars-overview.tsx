@@ -1,12 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "~/lib/supabase";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Input } from "~/components/ui/input";
 
 import {
   Table,
@@ -51,7 +47,66 @@ interface CarAddress {
     id: string;
     is_active: boolean | null;
     is_verified: boolean | null;
+    registration_number: string;
+    manufacturing_year: number | null;
+    fuel_type: string;
+    vehicle_seat_capacity: number;
+    hourly_price: number;
+    brand: { name: string } | null;
+    model: { name: string } | null;
+    images: { image_url: string; is_primary: boolean }[];
+    bookings: { start_time: string; end_time: string; status: string }[];
+    availability: { start_time: string; end_time: string; status: string }[];
   } | null;
+}
+
+type VehicleStatus = "Available" | "Booked" | "Maintenance" | "Offline";
+
+const VEHICLE_STATUS_COLORS: Record<VehicleStatus, string> = {
+  Available: "#16a34a",
+  Booked: "#3b82f6",
+  Maintenance: "#f97316",
+  Offline: "#94a3b8",
+};
+
+function getVehicleStatus(
+  car: CarAddress["cars"],
+  now = Date.now(),
+): VehicleStatus {
+  if (!car || !car.is_active || !car.is_verified) return "Offline";
+  const hasTimeOverlap = (start: string, end: string) =>
+    new Date(start).getTime() <= now && new Date(end).getTime() > now;
+  if (
+    car.bookings?.some(
+      (booking) =>
+        ["confirmed", "ongoing"].includes(booking.status) &&
+        hasTimeOverlap(booking.start_time, booking.end_time),
+    )
+  )
+    return "Booked";
+  if (
+    car.availability?.some(
+      (period) =>
+        period.status === "blocked" &&
+        hasTimeOverlap(period.start_time, period.end_time),
+    )
+  )
+    return "Maintenance";
+  return "Available";
+}
+
+function escapeHtml(value: string) {
+  return value.replace(
+    /[&<>"']/g,
+    (char) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[char]!,
+  );
 }
 
 interface AreaStats {
@@ -83,10 +138,7 @@ const STATUS_COLORS = {
 function normalizeCity(value: string | null | undefined) {
   if (!value) return "Unknown";
 
-  const normalized = value
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
+  const normalized = value.trim().toLowerCase().replace(/\s+/g, " ");
 
   const cityAliases: Record<string, string> = {
     ahmedabad: "Ahmedabad",
@@ -105,7 +157,7 @@ function normalizeCity(value: string | null | undefined) {
 
 function getSupplyLevel(
   count: number,
-  maxCount: number
+  maxCount: number,
 ): AreaStats["supplyLevel"] {
   if (maxCount <= 0) return "Low";
 
@@ -118,20 +170,12 @@ function getSupplyLevel(
   return "Low";
 }
 
-function SupplyBadge({
-  level,
-}: {
-  level: AreaStats["supplyLevel"];
-}) {
+function SupplyBadge({ level }: { level: AreaStats["supplyLevel"] }) {
   const styles = {
-    "Very High":
-      "bg-red-50 text-red-600 border-red-200",
-    High:
-      "bg-orange-50 text-orange-600 border-orange-200",
-    Medium:
-      "bg-yellow-50 text-yellow-700 border-yellow-200",
-    Low:
-      "bg-green-50 text-green-600 border-green-200",
+    "Very High": "bg-red-50 text-red-600 border-red-200",
+    High: "bg-orange-50 text-orange-600 border-orange-200",
+    Medium: "bg-yellow-50 text-yellow-700 border-yellow-200",
+    Low: "bg-green-50 text-green-600 border-green-200",
   };
 
   return (
@@ -167,13 +211,9 @@ function StatCard({
       <CardContent>
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-2xl font-bold tracking-tight">
-              {value}
-            </p>
+            <p className="text-2xl font-bold tracking-tight">{value}</p>
 
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              {title}
-            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{title}</p>
           </div>
 
           <div
@@ -193,6 +233,7 @@ export default function CarsOverview() {
   const [data, setData] = useState<CarAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapLoading, setMapLoading] = useState(true);
+  const [locationSearch, setLocationSearch] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -213,9 +254,19 @@ export default function CarsOverview() {
             cars!inner(
               id,
               is_active,
-              is_verified
+              is_verified,
+              registration_number,
+              manufacturing_year,
+              fuel_type,
+              vehicle_seat_capacity,
+              hourly_price,
+              brand:car_brands!brand_id(name),
+              model:car_models!model_id(name),
+              images:car_images!car_id(image_url,is_primary),
+              bookings:bookings!car_id(start_time,end_time,status),
+              availability:car_availability!car_id(start_time,end_time,status)
             )
-          `
+          `,
         )
         .not("latitude", "is", null)
         .not("longitude", "is", null);
@@ -242,36 +293,26 @@ export default function CarsOverview() {
   const statistics = useMemo(() => {
     const total = data.length;
 
-    const active = data.filter(
-      (item) => item.cars?.is_active === true
-    ).length;
+    const active = data.filter((item) => item.cars?.is_active === true).length;
 
     const verified = data.filter(
-      (item) => item.cars?.is_verified === true
+      (item) => item.cars?.is_verified === true,
     ).length;
 
     const activeVerified = data.filter(
       (item) =>
-        item.cars?.is_active === true &&
-        item.cars?.is_verified === true
+        item.cars?.is_active === true && item.cars?.is_verified === true,
     ).length;
 
     const inactive = total - active;
     const unverified = total - verified;
 
-    const cities = new Set(
-      data.map((item) => normalizeCity(item.city))
-    );
+    const cities = new Set(data.map((item) => normalizeCity(item.city)));
 
     const verificationRate =
-      total > 0
-        ? Math.round((verified / total) * 100)
-        : 0;
+      total > 0 ? Math.round((verified / total) * 100) : 0;
 
-    const activeRate =
-      total > 0
-        ? Math.round((active / total) * 100)
-        : 0;
+    const activeRate = total > 0 ? Math.round((active / total) * 100) : 0;
 
     return {
       total,
@@ -328,23 +369,16 @@ export default function CarsOverview() {
 
     const maxCount = Math.max(
       ...Object.values(grouped).map((item) => item.total),
-      0
+      0,
     );
 
     return Object.entries(grouped)
       .map(([area, stats]) => {
-        const available = Math.min(
-          stats.active,
-          stats.verified
-        );
+        const available = Math.min(stats.active, stats.verified);
 
         const utilization =
           stats.total > 0
-            ? Math.round(
-                ((stats.total - available) /
-                  stats.total) *
-                  100
-              )
+            ? Math.round(((stats.total - available) / stats.total) * 100)
             : 0;
 
         return {
@@ -356,10 +390,7 @@ export default function CarsOverview() {
           inactive: stats.inactive,
           unverified: stats.unverified,
           utilization,
-          supplyLevel: getSupplyLevel(
-            stats.total,
-            maxCount
-          ),
+          supplyLevel: getSupplyLevel(stats.total, maxCount),
         };
       })
       .sort((a, b) => b.total - a.total);
@@ -368,12 +399,23 @@ export default function CarsOverview() {
   const cityChartData = useMemo(() => {
     return areaStats.slice(0, 8).map((item) => ({
       name:
-        item.area.length > 15
-          ? `${item.area.substring(0, 15)}…`
-          : item.area,
+        item.area.length > 15 ? `${item.area.substring(0, 15)}…` : item.area,
       cars: item.total,
     }));
   }, [areaStats]);
+
+  const mapData = useMemo(() => {
+    const query = locationSearch.trim().toLocaleLowerCase();
+    if (!query) return data;
+
+    return data.filter((item) =>
+      [item.address_line1, item.address_line2, item.city, item.pincode]
+        .filter(Boolean)
+        .join(" ")
+        .toLocaleLowerCase()
+        .includes(query),
+    );
+  }, [data, locationSearch]);
 
   const statusChartData = useMemo(
     () => [
@@ -394,11 +436,26 @@ export default function CarsOverview() {
         value: statistics.unverified,
       },
     ],
-    [statistics]
+    [statistics],
   );
 
+  const vehicleStatusCounts = useMemo(() => {
+    const counts: Record<VehicleStatus, number> = {
+      Available: 0,
+      Booked: 0,
+      Maintenance: 0,
+      Offline: 0,
+    };
+    mapData.forEach((item) => {
+      counts[getVehicleStatus(item.cars)] += 1;
+    });
+    return counts;
+  }, [mapData]);
+
   useEffect(() => {
-    if (!mapRef.current || data.length === 0) {
+    if (!mapRef.current) return;
+    if (mapData.length === 0) {
+      setMapLoading(false);
       return;
     }
 
@@ -413,165 +470,70 @@ export default function CarsOverview() {
 
         (window as any).L = L;
 
-        await import("leaflet.heat");
-
         if (cancelled || !mapRef.current) return;
 
         const map = L.map(mapRef.current, {
-          zoomControl: true,
+          zoomControl: false,
           attributionControl: true,
         }).setView([23.0225, 72.5714], 12);
 
         mapInstance = map;
+        L.control.zoom({ position: "bottomright" }).addTo(map);
 
         L.tileLayer(
-          "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+          `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${import.meta.env.VITE_CARTO_API_KEY}`,
           {
-            maxZoom: 19,
+            maxZoom: 20,
             attribution:
-              '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
+              '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>',
             className: "google-like-map-tiles",
-          }
+          },
         ).addTo(map);
 
-        const GRID_SIZE = 0.008;
-
-        const grid = new Map<
-          string,
-          {
-            latitude: number;
-            longitude: number;
-            count: number;
-          }
-        >();
-
-        data.forEach((item) => {
+        mapData.forEach((item) => {
           const latitude = Number(item.latitude);
           const longitude = Number(item.longitude);
 
-          if (
-            !Number.isFinite(latitude) ||
-            !Number.isFinite(longitude)
-          ) {
+          if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
             return;
           }
 
-          const gridLat =
-            Math.floor(latitude / GRID_SIZE) *
-            GRID_SIZE;
-
-          const gridLng =
-            Math.floor(longitude / GRID_SIZE) *
-            GRID_SIZE;
-
-          const key = `${gridLat.toFixed(4)}_${gridLng.toFixed(4)}`;
-
-          const existing = grid.get(key);
-
-          if (existing) {
-            existing.count += 1;
-          } else {
-            grid.set(key, {
-              latitude:
-                gridLat + GRID_SIZE / 2,
-              longitude:
-                gridLng + GRID_SIZE / 2,
-              count: 1,
-            });
-          }
-        });
-
-        const gridPoints = Array.from(grid.values());
-
-        const maxDensity = Math.max(
-          ...gridPoints.map((point) => point.count),
-          1
-        );
-
-        const heatData = gridPoints.map((point) => {
-          const normalized =
-            point.count / maxDensity;
-
-          const weight =
-            0.15 + normalized * 0.85;
-
-          return [
-            point.latitude,
-            point.longitude,
-            weight,
-          ] as [number, number, number];
-        });
-
-        // @ts-ignore
-        if (L.heatLayer) {
-          // @ts-ignore
-          L.heatLayer(heatData, {
-            radius: 48,
-            blur: 32,
-            minOpacity: 0.45,
-            maxZoom: 15,
-            max: 1,
-
-            gradient: {
-              0.0: "#22c55e",
-              0.25: "#84cc16",
-              0.45: "#eab308",
-              0.65: "#f97316",
-              0.82: "#ef4444",
-              1.0: "#b91c1c",
-            },
-          }).addTo(map);
-        }
-
-        data.forEach((item) => {
-          const active =
-            item.cars?.is_active === true;
-
-          const verified =
-            item.cars?.is_verified === true;
-
-          if (!active || !verified) return;
-
-          const latitude = Number(item.latitude);
-          const longitude = Number(item.longitude);
-
-          if (
-            !Number.isFinite(latitude) ||
-            !Number.isFinite(longitude)
-          ) {
-            return;
-          }
-
-          L.circleMarker(
-            [latitude, longitude],
-            {
-              radius: 3,
-              weight: 1,
-              fillOpacity: 0.7,
-              color: "#ffffff",
-              fillColor: "#2563eb",
-            }
-          )
-            .bindPopup(
-              `
-                <div style="min-width:180px">
-                  <strong>${item.address_line1}</strong>
-                  <br />
-                  ${normalizeCity(item.city)} - ${item.pincode}
-                  <br />
-                  <small>Active & Verified</small>
-                </div>
-              `
-            )
-            .addTo(map);
+          const car = item.cars;
+          if (!car) return;
+          const status = getVehicleStatus(car);
+          const color = VEHICLE_STATUS_COLORS[status];
+          const modelName =
+            [car.brand?.name, car.model?.name].filter(Boolean).join(" ") ||
+            "VeloRent vehicle";
+          const candidateImage =
+            car.images?.find((image) => image.is_primary)?.image_url ??
+            car.images?.[0]?.image_url;
+          const imageUrl = candidateImage?.startsWith("https://")
+            ? candidateImage
+            : undefined;
+          const icon = L.divIcon({
+            className: "vehicle-map-marker",
+            html: `<div style="width:32px;height:32px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 2px 7px #0005;display:flex;align-items:center;justify-content:center"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 11 1.5-5h11L19 11l2 2v5h-2"/><path d="M5 18H3v-5l2-2"/><path d="M5 11h14"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg></div>`,
+            iconSize: [30, 30],
+            iconAnchor: [16, 16],
+          });
+          const popup = `
+            <div style="width:220px;font-family:Arial,sans-serif">
+              ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(modelName)}" style="width:100%;height:86px;object-fit:cover;border-radius:8px;background:#f1f5f9" />` : ""}
+              <div style="font-weight:700;margin-top:8px">${escapeHtml(modelName)}</div>
+              <div style="font-size:12px;color:#64748b">${escapeHtml(car.registration_number)}${car.manufacturing_year ? ` · ${car.manufacturing_year}` : ""}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px"><span style="width:8px;height:8px;border-radius:50%;background:${color}"></span>${status}</div>
+              <div style="font-size:12px;color:#475569;margin-top:6px">${escapeHtml(item.address_line1)}, ${escapeHtml(normalizeCity(item.city))}</div>
+              <div style="font-size:12px;color:#475569;margin-top:4px">${escapeHtml(car.fuel_type)} · ${car.vehicle_seat_capacity} Seater</div>
+              <div style="font-weight:700;margin-top:8px">₹ ${Number(car.hourly_price).toLocaleString("en-IN")} / hour</div>
+              <a href="/cars/${encodeURIComponent(car.id)}" style="display:block;text-align:center;background:#3b82f6;color:white;text-decoration:none;border-radius:6px;padding:7px;margin-top:9px;font-size:12px;font-weight:600">View Car Details</a>
+            </div>`;
+          L.marker([latitude, longitude], { icon }).bindPopup(popup).addTo(map);
         });
 
         setMapLoading(false);
       } catch (error) {
-        console.error(
-          "Failed to initialize map:",
-          error
-        );
+        console.error("Failed to initialize map:", error);
 
         setMapLoading(false);
       }
@@ -587,7 +549,7 @@ export default function CarsOverview() {
         mapInstance = null;
       }
     };
-  }, [data]);
+  }, [mapData]);
 
   if (loading) {
     return (
@@ -598,20 +560,15 @@ export default function CarsOverview() {
         </div>
 
         <div className="grid grid-cols-2 gap-4 xl:grid-cols-5">
-          {Array.from({ length: 5 }).map(
-            (_, index) => (
-              <Card
-                key={index}
-                className="shadow-none"
-              >
-                <CardContent>
-                  <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-                  <div className="mt-3 h-8 w-16 animate-pulse rounded bg-muted" />
-                  <div className="mt-2 h-3 w-28 animate-pulse rounded bg-muted" />
-                </CardContent>
-              </Card>
-            )
-          )}
+          {Array.from({ length: 5 }).map((_, index) => (
+            <Card key={index} className="shadow-none">
+              <CardContent>
+                <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+                <div className="mt-3 h-8 w-16 animate-pulse rounded bg-muted" />
+                <div className="mt-2 h-3 w-28 animate-pulse rounded bg-muted" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -620,13 +577,10 @@ export default function CarsOverview() {
   return (
     <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 p-5">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">
-          Cars Overview
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight">Cars Overview</h1>
 
         <p className="text-sm text-muted-foreground">
-          Car supply distribution and availability
-          analytics across Ahmedabad.
+          Car supply distribution and availability analytics across Ahmedabad.
         </p>
       </div>
 
@@ -691,10 +645,7 @@ export default function CarsOverview() {
                   No data available
                 </div>
               ) : (
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                >
+                <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={cityChartData}
                     layout="vertical"
@@ -705,10 +656,7 @@ export default function CarsOverview() {
                       bottom: 5,
                     }}
                   >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      horizontal={false}
-                    />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
 
                     <XAxis
                       type="number"
@@ -760,10 +708,7 @@ export default function CarsOverview() {
           <CardContent className="p-5">
             <div className="flex h-[280px] items-center">
               <div className="h-full flex-1">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                >
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={statusChartData}
@@ -774,18 +719,16 @@ export default function CarsOverview() {
                       paddingAngle={3}
                       dataKey="value"
                     >
-                      {statusChartData.map(
-                        (entry) => (
-                          <Cell
-                            key={entry.name}
-                            fill={
-                              STATUS_COLORS[
-                                entry.name as keyof typeof STATUS_COLORS
-                              ]
-                            }
-                          />
-                        )
-                      )}
+                      {statusChartData.map((entry) => (
+                        <Cell
+                          key={entry.name}
+                          fill={
+                            STATUS_COLORS[
+                              entry.name as keyof typeof STATUS_COLORS
+                            ]
+                          }
+                        />
+                      ))}
                     </Pie>
 
                     <Tooltip
@@ -800,34 +743,30 @@ export default function CarsOverview() {
               </div>
 
               <div className="w-40 space-y-4">
-                {statusChartData.map(
-                  (item) => (
-                    <div
-                      key={item.name}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{
-                            backgroundColor:
-                              STATUS_COLORS[
-                                item.name as keyof typeof STATUS_COLORS
-                              ],
-                          }}
-                        />
+                {statusChartData.map((item) => (
+                  <div
+                    key={item.name}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{
+                          backgroundColor:
+                            STATUS_COLORS[
+                              item.name as keyof typeof STATUS_COLORS
+                            ],
+                        }}
+                      />
 
-                        <span className="text-xs text-muted-foreground">
-                          {item.name}
-                        </span>
-                      </div>
-
-                      <span className="text-sm font-semibold">
-                        {item.value}
+                      <span className="text-xs text-muted-foreground">
+                        {item.name}
                       </span>
                     </div>
-                  )
-                )}
+
+                    <span className="text-sm font-semibold">{item.value}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </CardContent>
@@ -836,40 +775,63 @@ export default function CarsOverview() {
 
       <div className="grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(0,1.15fr)_minmax(600px,0.85fr)]">
         <Card className="overflow-hidden shadow-none">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-sm font-semibold">
-                  Car Supply Heat Map
-                </CardTitle>
-
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Pickup-location concentration across Ahmedabad
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
-                Low
-
-                <span className="h-2.5 w-2.5 rounded-full bg-yellow-500" />
-                Medium
-
-                <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
-                High
-
-                <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
-                Very High
-              </div>
+          <CardHeader className="flex flex-row items-center justify-between gap-4">
+            <div className="min-w-0">
+              <CardTitle className="text-sm font-semibold">
+                Vehicle Availability Map
+              </CardTitle>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Fleet vehicles by current status across pickup locations
+              </p>
+            </div>
+            <div className="w-full max-w-xs shrink-0">
+              <Input
+                value={locationSearch}
+                onChange={(event) => setLocationSearch(event.target.value)}
+                placeholder="Search pickup address or area (e.g. Vatva)"
+                aria-label="Filter map by pickup address or area"
+                className="h-9 text-xs"
+              />
             </div>
           </CardHeader>
 
           <CardContent className="p-0">
             <div className="relative h-[520px] w-full">
-              <div
-                ref={mapRef}
-                className="absolute inset-0"
-              />
+              <div ref={mapRef} className="absolute inset-0" />
+
+              <div className="absolute left-3 top-3 z-[500] rounded-lg border bg-background/95 p-3 shadow-md backdrop-blur">
+                <div className="mb-2 text-[11px] font-semibold">
+                  Vehicle status
+                </div>
+                <div className="space-y-1.5">
+                  {(
+                    [
+                      "Available",
+                      "Booked",
+                      "Maintenance",
+                      "Offline",
+                    ] as VehicleStatus[]
+                  ).map((status) => (
+                    <div
+                      key={status}
+                      className="flex items-center justify-between gap-5 text-[11px] text-muted-foreground"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{
+                            backgroundColor: VEHICLE_STATUS_COLORS[status],
+                          }}
+                        />
+                        {status}
+                      </span>
+                      <span className="font-medium text-foreground">
+                        {vehicleStatusCounts[status]}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               {mapLoading && (
                 <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-background/40 backdrop-blur-[1px]">
@@ -879,49 +841,42 @@ export default function CarsOverview() {
                 </div>
               )}
 
-              {data.length === 0 &&
-                !mapLoading && (
-                  <div className="absolute inset-0 z-[1000] flex items-center justify-center">
-                    <div className="rounded-md border bg-background px-4 py-2 text-sm text-muted-foreground shadow-sm">
-                      No pickup location data available.
-                    </div>
+              {mapData.length === 0 && !mapLoading && (
+                <div className="absolute inset-0 z-[1000] flex items-center justify-center">
+                  <div className="rounded-md border bg-background px-4 py-2 text-sm text-muted-foreground shadow-sm">
+                    {locationSearch.trim()
+                      ? "No vehicles found for this location."
+                      : "No pickup location data available."}
                   </div>
-                )}
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-3">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
-                  <span className="text-[11px] text-muted-foreground">
-                    Low Supply
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t bg-muted/20 px-4 py-3">
+              {(
+                [
+                  "Available",
+                  "Booked",
+                  "Maintenance",
+                  "Offline",
+                ] as VehicleStatus[]
+              ).map((status) => (
+                <span
+                  key={status}
+                  className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
+                >
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: VEHICLE_STATUS_COLORS[status] }}
+                  />
+                  {status}{" "}
+                  <span className="font-semibold text-foreground">
+                    {vehicleStatusCounts[status]}
                   </span>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-yellow-500" />
-                  <span className="text-[11px] text-muted-foreground">
-                    Medium
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
-                  <span className="text-[11px] text-muted-foreground">
-                    High
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
-                  <span className="text-[11px] text-muted-foreground">
-                    Very High
-                  </span>
-                </div>
-              </div>
-
-              <span className="text-[11px] text-muted-foreground">
-                {statistics.activeVerified} active & verified
+                </span>
+              ))}
+              <span className="ml-auto text-[11px] text-muted-foreground">
+                {mapData.length} vehicles mapped
               </span>
             </div>
           </CardContent>
@@ -956,13 +911,9 @@ export default function CarsOverview() {
                 <Table>
                   <TableHeader className="sticky top-0 z-10 bg-background">
                     <TableRow className="hover:bg-background">
-                      <TableHead className="w-10 text-[10px]">
-                        #
-                      </TableHead>
+                      <TableHead className="w-10 text-[10px]">#</TableHead>
 
-                      <TableHead className="text-[10px]">
-                        Area
-                      </TableHead>
+                      <TableHead className="text-[10px]">Area</TableHead>
 
                       <TableHead className="text-right text-[10px]">
                         Cars
@@ -983,72 +934,63 @@ export default function CarsOverview() {
                   </TableHeader>
 
                   <TableBody>
-                    {areaStats.map(
-                      (item, index) => (
-                        <TableRow
-                          key={item.area}
-                          className="hover:bg-muted/30"
-                        >
-                          <TableCell className="text-[10px] text-muted-foreground">
-                            {index + 1}
-                          </TableCell>
+                    {areaStats.map((item, index) => (
+                      <TableRow key={item.area} className="hover:bg-muted/30">
+                        <TableCell className="text-[10px] text-muted-foreground">
+                          {index + 1}
+                        </TableCell>
 
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-50 text-blue-600">
-                                <MapPin className="h-3.5 w-3.5" />
-                              </div>
-
-                              <div>
-                                <p className="text-xs font-medium">
-                                  {item.area}
-                                </p>
-
-                                <p className="text-[10px] text-muted-foreground">
-                                  {item.available} ready
-                                </p>
-                              </div>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+                              <MapPin className="h-3.5 w-3.5" />
                             </div>
-                          </TableCell>
 
-                          <TableCell className="text-right">
-                            <span className="text-xs font-semibold">
-                              {item.total}
-                            </span>
-                          </TableCell>
+                            <div>
+                              <p className="text-xs font-medium">{item.area}</p>
 
-                          <TableCell className="text-right">
-                            <span
-                              className={
-                                item.active > 0
-                                  ? "text-xs font-medium text-green-600"
-                                  : "text-xs text-muted-foreground"
-                              }
-                            >
-                              {item.active}
-                            </span>
-                          </TableCell>
+                              <p className="text-[10px] text-muted-foreground">
+                                {item.available} ready
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
 
-                          <TableCell className="text-right">
-                            <span
-                              className={
-                                item.verified > 0
-                                  ? "text-xs font-medium text-blue-600"
-                                  : "text-xs text-muted-foreground"
-                              }
-                            >
-                              {item.verified}
-                            </span>
-                          </TableCell>
+                        <TableCell className="text-right">
+                          <span className="text-xs font-semibold">
+                            {item.total}
+                          </span>
+                        </TableCell>
 
-                          <TableCell className="text-center">
-                            <SupplyBadge
-                              level={item.supplyLevel}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      )
-                    )}
+                        <TableCell className="text-right">
+                          <span
+                            className={
+                              item.active > 0
+                                ? "text-xs font-medium text-green-600"
+                                : "text-xs text-muted-foreground"
+                            }
+                          >
+                            {item.active}
+                          </span>
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          <span
+                            className={
+                              item.verified > 0
+                                ? "text-xs font-medium text-blue-600"
+                                : "text-xs text-muted-foreground"
+                            }
+                          >
+                            {item.verified}
+                          </span>
+                        </TableCell>
+
+                        <TableCell className="text-center">
+                          <SupplyBadge level={item.supplyLevel} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
@@ -1056,7 +998,6 @@ export default function CarsOverview() {
           </CardContent>
         </Card>
       </div>
-
     </div>
   );
 }
