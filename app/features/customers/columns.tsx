@@ -25,6 +25,7 @@ export type Customer = {
   search_count?: number;
   no_result_count?: number;
   last_searched_at?: string;
+  lead_assignee?: { full_name: string | null; avatar_url: string | null } | null;
 };
 
 export const customerColumns: ColumnDef<Customer>[] = [

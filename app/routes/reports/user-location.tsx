@@ -60,7 +60,9 @@ export default function UserLocation() {
   const message = fetcher.data?.message ?? EMPTY_MESSAGE;
 
   function findBooking() {
-    void fetcher.load(`?${new URLSearchParams({ bookingCode })}`);
+    const code = bookingCode.trim().replace(/^#/, "").toUpperCase();
+    if (!code) return;
+    void fetcher.load(`/reports/user-location?${new URLSearchParams({ bookingCode: code })}`);
   }
 
   useEffect(() => {
@@ -146,7 +148,7 @@ export default function UserLocation() {
                   <MapPin className="size-8" strokeWidth={1.5} aria-hidden="true" />
                 </div>
               )}
-              <p>{loading ? "Loading location history?" : message}</p>
+              <p>{loading ? "Loading location history…" : message}</p>
             </div>
           )}
         </CardContent>

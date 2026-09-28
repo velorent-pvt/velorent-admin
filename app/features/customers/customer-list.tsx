@@ -9,6 +9,7 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import type { Customer } from "./columns";
 import type { ColumnDef } from "@tanstack/react-table";
+import { supabase } from "~/lib/supabase";
 
 export function CustomerList({
   initialCustomers,
@@ -42,9 +43,42 @@ export function CustomerList({
     placeholderData: (previousData) => previousData,
   });
 
+  const { data: customerLeads = [] } = useQuery({
+    queryKey: ["analytics-customer-leads"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("customer_leads")
+        .select("email, mobile, status, created_at, profiles_assignee:assign_to(full_name, avatar_url)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: initialCustomers !== undefined && actionRange !== undefined,
+  });
+
+  const customersWithLead = useMemo(() => {
+    if (!initialCustomers) return initialCustomers;
+    const normalizeEmail = (value: string | null | undefined) => value?.trim().toLowerCase() ?? "";
+    const normalizePhone = (value: string | null | undefined) => value?.replace(/\D/g, "") ?? "";
+
+    return initialCustomers.map((customer) => {
+      const email = normalizeEmail(customer.email);
+      const phone = normalizePhone(customer.phone);
+      const lead = customerLeads.find((candidate) =>
+        (email && normalizeEmail(candidate.email) === email) ||
+        (phone && normalizePhone(candidate.mobile) === phone),
+      );
+      const assignee = lead?.profiles_assignee;
+      return {
+        ...customer,
+        lead_assignee: Array.isArray(assignee) ? assignee[0] ?? null : assignee ?? null,
+      };
+    });
+  }, [customerLeads, initialCustomers]);
+
   const filteredInitialCustomers = useMemo(() => {
     if (initialCustomers === undefined) return customers ?? [];
-    const items = initialCustomers ?? customers ?? [];
+    const items = customersWithLead ?? customers ?? [];
     if (actionRange) return items;
 
     const from = fromDate ? new Date(fromDate) : undefined;
@@ -60,7 +94,7 @@ export function CustomerList({
       if (to && joinedAt > to) return false;
       return true;
     });
-  }, [customers, fromDate, initialCustomers, toDate, actionRange]);
+  }, [customers, customersWithLead, fromDate, initialCustomers, toDate, actionRange]);
 
   if (initialCustomers === undefined && isLoading) return <Loader />;
 
