@@ -12,6 +12,11 @@ import {
   type BookingStatus,
 } from "~/api/bookings";
 import { supabase } from "~/lib/supabase";
+import {
+  buildBookingAgreementFileName,
+  buildBookingAgreementHtml,
+  downloadBookingAgreement,
+} from "~/lib/booking-agreement";
 import { Loader } from "~/components/shared/Loader";
 import {
   Card,
@@ -42,6 +47,7 @@ import {
   Clock,
   CreditCard,
   ExternalLink,
+  Download,
   Flag,
   Gauge,
   Hash,
@@ -669,6 +675,15 @@ export default function BookingDetailPage() {
   const bookingEvents = rawEvents.length > 0 ? rawEvents : fallbackEvents;
 
   const handoverDetails = (handoverData as any) ?? null;
+  const canDownloadAgreement =
+    currentStatus === "ongoing" &&
+    !!handoverDetails?.created_at &&
+    handoverDetails?.start_odometer_km !== null &&
+    handoverDetails?.start_odometer_km !== undefined &&
+    String(handoverDetails.start_odometer_km).trim() !== "" &&
+    Number.isFinite(Number(handoverDetails.start_odometer_km)) &&
+    Number(handoverDetails.start_odometer_km) >= 0 &&
+    !!handoverDetails?.handover_proof_url;
   const returnDetails = (returnData as any) ?? null;
   const disputes: any[] = Array.isArray(disputesData) ? disputesData : [];
 
@@ -1069,6 +1084,51 @@ export default function BookingDetailPage() {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {canDownloadAgreement && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                try {
+                  const html = buildBookingAgreementHtml({
+                    booking,
+                    customer: {
+                      name: customer?.full_name ?? booking.customer_name,
+                      phone: customer?.phone,
+                      email: customer?.email,
+                      drivingLicenseStatus: customerDetails?.dl_verified
+                        ? "Verified"
+                        : "Not verified",
+                    },
+                    carName: `${brand} ${model}`.trim(),
+                    registrationNumber: car?.registration_number,
+                    hostName: host?.full_name ?? booking.host_name,
+                    pickupAddress: formatAddress(
+                      [pickup?.address_line1, pickup?.city, pickup?.state]
+                        .filter(Boolean)
+                        .join(", "),
+                    ),
+                    deliveryAddress: booking.delivery_address,
+                    handoverDetails,
+                  });
+                  downloadBookingAgreement(
+                    html,
+                    buildBookingAgreementFileName(booking.id),
+                  );
+                } catch (error) {
+                  toast.error(
+                    error instanceof Error
+                      ? error.message
+                      : "We could not generate this agreement.",
+                  );
+                }
+              }}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download Agreement
+            </Button>
           )}
 
         </div>
