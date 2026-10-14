@@ -7,7 +7,6 @@ import {
   updateDepositStatusAdmin,
   updateBookingStatus,
   changeBookingCarAdmin,
-
   getAssignableCars,
   type BookingStatus,
 } from "~/api/bookings";
@@ -63,7 +62,7 @@ import {
   User,
   Banknote,
   Bike,
-  Ticket
+  Ticket,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Input } from "~/components/ui/input";
@@ -200,8 +199,6 @@ function isSuccessfulPayment(status: unknown) {
     String(status ?? "").toLowerCase(),
   );
 }
-
-
 
 function pickFirstString(
   source: Record<string, unknown>,
@@ -415,8 +412,12 @@ export default function BookingDetailPage() {
     enabled: !!booking?.customer_id && !!booking?.created_at,
     queryFn: async () => {
       const bookingTime = new Date(booking!.created_at!);
-      const windowStart = new Date(bookingTime.getTime() - 10 * 60 * 1000).toISOString();
-      const windowEnd = new Date(bookingTime.getTime() + 10 * 60 * 1000).toISOString();
+      const windowStart = new Date(
+        bookingTime.getTime() - 10 * 60 * 1000,
+      ).toISOString();
+      const windowEnd = new Date(
+        bookingTime.getTime() + 10 * 60 * 1000,
+      ).toISOString();
       const { data, error } = await supabase
         .from("coupon_usages")
         .select(`coupon:coupons(code, discount_type, discount_value), used_at`)
@@ -445,8 +446,6 @@ export default function BookingDetailPage() {
     queryClient.invalidateQueries({ queryKey: ["admin_bookings"] });
   };
 
-
-
   const { mutate: changeCar, status: carChangeStatus } = useMutation({
     mutationFn: () => {
       if (!replacementCarId) throw new Error("Choose a replacement car");
@@ -458,7 +457,9 @@ export default function BookingDetailPage() {
       toast.success("Booking car changed. Pricing was not changed.");
     },
     onError: (error: any) => {
-      toast.error(error?.message ?? "Selected car is unavailable for this booking");
+      toast.error(
+        error?.message ?? "Selected car is unavailable for this booking",
+      );
     },
   });
 
@@ -496,7 +497,10 @@ export default function BookingDetailPage() {
 
       if (customerRefundAmount > 0) {
         try {
-          await markBookingPaymentRefundedAdmin(booking.id, customerRefundAmount);
+          await markBookingPaymentRefundedAdmin(
+            booking.id,
+            customerRefundAmount,
+          );
         } catch (e) {
           // Ignore error if no payment record exists, just update deposit status
           console.warn("Could not mark payment as refunded in DB:", e);
@@ -527,7 +531,9 @@ export default function BookingDetailPage() {
         return;
       }
       if (result?.mode === "deposit_forfeited") {
-        toast.success("Deposit marked as forfeited. Collect remaining amount manually.");
+        toast.success(
+          "Deposit marked as forfeited. Collect remaining amount manually.",
+        );
         return;
       }
       if (result?.mode === "host_payout_paid") {
@@ -537,16 +543,24 @@ export default function BookingDetailPage() {
       toast.success("Settlement recorded successfully!");
     },
     onError: (err: any) => {
-      toast.error(typeof err?.message === "string" ? err.message : "Failed to process settlement");
+      toast.error(
+        typeof err?.message === "string"
+          ? err.message
+          : "Failed to process settlement",
+      );
     },
   });
 
-  const hostPayoutStatusForEffect = String(hostPayoutData?.status ?? "").toLowerCase();
+  const hostPayoutStatusForEffect = String(
+    hostPayoutData?.status ?? "",
+  ).toLowerCase();
   const isHostPayoutPaidForEffect =
     hostPayoutStatusForEffect === "paid" ||
     hostPayoutStatusForEffect === "success" ||
     !!hostPayoutData?.payout_completed_at;
-  const customerDepositStatusForEffect = String(booking?.deposit_status ?? "").toLowerCase();
+  const customerDepositStatusForEffect = String(
+    booking?.deposit_status ?? "",
+  ).toLowerCase();
   const isCustomerSettlementDoneForEffect =
     customerDepositStatusForEffect === "refunded" ||
     customerDepositStatusForEffect === "forfeited";
@@ -563,8 +577,6 @@ export default function BookingDetailPage() {
     isCustomerSettlementDoneForEffect,
     settlementTarget,
   ]);
-
-
 
   if (isLoading) return <Loader />;
   if (!booking)
@@ -695,14 +707,16 @@ export default function BookingDetailPage() {
     : null;
   const includedKm =
     (Number(booking.total_hours ?? 0) / 24) * INCLUDED_KM_PER_24_HOURS;
-  const extraDistanceKm = Math.max(0, Number(distanceTravelled ?? 0) - includedKm);
+  const extraDistanceKm = Math.max(
+    0,
+    Number(distanceTravelled ?? 0) - includedKm,
+  );
   const extraFare = extraDistanceKm * EXTRA_KM_RATE;
   const hostExtraShare = extraFare * 0.5;
   const hostBaseShare =
     Number(booking.total_amount ?? 0) -
     Number(booking.deposit_amount ?? 0) -
     Number(booking.commission_amount ?? 0);
-
 
   const scheduledReturnTime = new Date(booking.end_time).getTime();
   const actualReturnTime = returnDetails?.created_at
@@ -714,16 +728,24 @@ export default function BookingDetailPage() {
       : 0;
   const vehiclePricePerHour =
     Number(booking.total_hours ?? 0) > 0
-      ? Math.round(Number(booking.base_amount ?? 0) / Number(booking.total_hours))
+      ? Math.round(
+          Number(booking.base_amount ?? 0) / Number(booking.total_hours),
+        )
       : 0;
   const overstayRatePerHour = vehiclePricePerHour + OVERSTAY_SURCHARGE;
   const lateReturnCharge = lateReturnHours * overstayRatePerHour;
   const hostLateReturnShare = lateReturnCharge * 0.5;
-  const hostSettlementAmount = Math.max(0, hostBaseShare + hostExtraShare + hostLateReturnShare);
+  const hostSettlementAmount = Math.max(
+    0,
+    hostBaseShare + hostExtraShare + hostLateReturnShare,
+  );
   const damageCharge = Math.max(0, Number(damageChargeInput || 0));
   const amountAlreadyPaid = bookingPayments
     .filter((payment: any) => isSuccessfulPayment(payment.status))
-    .reduce((total: number, payment: any) => total + Number(payment.amount ?? 0), 0);
+    .reduce(
+      (total: number, payment: any) => total + Number(payment.amount ?? 0),
+      0,
+    );
   // An extension increases booking.total_amount but does not take a new payment.
   // Only charge this difference when an initial successful payment is recorded.
   const extensionCharge =
@@ -754,25 +776,28 @@ export default function BookingDetailPage() {
     customerDetails?.two_wheeler_collateral === true ||
     (Number(booking.deposit_amount ?? 0) <= 0 &&
       String(booking.deposit_status ?? "").toLowerCase() === "pending");
-  const securityDepositDisplay = hasTwoWheelerCollateral
-    ? (
-        <span
-          className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-blue-700"
-          title="Two-wheeler collateral"
-        >
-          <Bike className="h-4 w-4" />
-        </span>
-      )
-    : `${fmtCurrency(booking.deposit_amount)} (${booking.deposit_status})`;
+  const securityDepositDisplay = hasTwoWheelerCollateral ? (
+    <span
+      className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-blue-700"
+      title="Two-wheeler collateral"
+    >
+      <Bike className="h-4 w-4" />
+    </span>
+  ) : (
+    `${fmtCurrency(booking.deposit_amount)} (${booking.deposit_status})`
+  );
 
   const hostPayoutStatus = String(hostPayoutData?.status ?? "").toLowerCase();
   const isHostPayoutPaid =
     hostPayoutStatus === "paid" ||
     hostPayoutStatus === "success" ||
     !!hostPayoutData?.payout_completed_at;
-  const customerDepositStatus = String(booking.deposit_status ?? "").toLowerCase();
+  const customerDepositStatus = String(
+    booking.deposit_status ?? "",
+  ).toLowerCase();
   const isCustomerSettlementDone =
-    customerDepositStatus === "refunded" || customerDepositStatus === "forfeited";
+    customerDepositStatus === "refunded" ||
+    customerDepositStatus === "forfeited";
   const hasSettlementOptions = !isHostPayoutPaid || !isCustomerSettlementDone;
 
   const settlementButtonLabel =
@@ -824,241 +849,259 @@ export default function BookingDetailPage() {
           {currentStatus !== "completed" && (
             <Card>
               <CardHeader>
-              <CardTitle className="text-lg font-semibold tracking-tight">
-                Status Update
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">
-                  Current Status
-                </span>
-                <Badge
-                  className={`capitalize text-xs font-semibold ${STATUS_COLORS[currentStatus]}`}
-                  variant="outline"
-                >
-                  {currentStatus}
-                </Badge>
-              </div>
-              <Select
-                value={selectedStatus}
-                onValueChange={(v) => setSelectedStatus(v as BookingStatus)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Choose new status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {STATUS_OPTIONS.filter((s) => s !== currentStatus).map(
-                      (s) => (
-                        <SelectItem key={s} value={s} className="capitalize">
-                          {s}
-                        </SelectItem>
-                      ),
-                    )}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <Button
-                className="w-full mt-2"
-                disabled={!selectedStatus || mutationStatus === "pending"}
-                onClick={() =>
-                  selectedStatus &&
-                  changeStatus({ status: selectedStatus as BookingStatus })
-                }
-              >
-                {mutationStatus === "pending" ? "Saving..." : "Update Status"}
-              </Button>
-            </CardContent>
-          </Card>
-          )}
-
- 
-          {currentStatus === "completed" && (
-            <Card>
-              <CardHeader>
-              <CardTitle className="text-lg font-semibold tracking-tight">
-                Settlement
-              </CardTitle>
-              <CardDescription>Settle payments manually</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              {hasSettlementOptions ? (
+                <CardTitle className="text-lg font-semibold tracking-tight">
+                  Status Update
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">
+                    Current Status
+                  </span>
+                  <Badge
+                    className={`capitalize text-xs font-semibold ${STATUS_COLORS[currentStatus]}`}
+                    variant="outline"
+                  >
+                    {currentStatus}
+                  </Badge>
+                </div>
                 <Select
-                  value={settlementTarget}
-                  onValueChange={(v) => setSettlementTarget(v as any)}
+                  value={selectedStatus}
+                  onValueChange={(v) => setSelectedStatus(v as BookingStatus)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pay To..." />
+                    <SelectValue placeholder="Choose new status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {!isHostPayoutPaid && <SelectItem value="host">Host</SelectItem>}
-                      {!isCustomerSettlementDone && (
-                        <SelectItem value="customer">Customer</SelectItem>
+                      {STATUS_OPTIONS.filter((s) => s !== currentStatus).map(
+                        (s) => (
+                          <SelectItem key={s} value={s} className="capitalize">
+                            {s}
+                          </SelectItem>
+                        ),
                       )}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-              ) : (
-                <p className="text-xs text-muted-foreground border rounded-md px-3 py-2">
-                  No settlement actions remaining for this booking.
-                </p>
-              )}
+                <Button
+                  className="w-full mt-2"
+                  disabled={!selectedStatus || mutationStatus === "pending"}
+                  onClick={() =>
+                    selectedStatus &&
+                    changeStatus({ status: selectedStatus as BookingStatus })
+                  }
+                >
+                  {mutationStatus === "pending" ? "Saving..." : "Update Status"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
-              {isHostPayoutPaid && (
-                <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2">
-                  Host payout is already marked as paid.
-                </p>
-              )}
-              {isCustomerSettlementDone && (
-                <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2">
-                  Customer settlement is already completed ({customerDepositStatus}).
-                </p>
-              )}
+          {currentStatus === "completed" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold tracking-tight">
+                  Settlement
+                </CardTitle>
+                <CardDescription>Settle payments manually</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                {hasSettlementOptions ? (
+                  <Select
+                    value={settlementTarget}
+                    onValueChange={(v) => setSettlementTarget(v as any)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Pay To..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {!isHostPayoutPaid && (
+                          <SelectItem value="host">Host</SelectItem>
+                        )}
+                        {!isCustomerSettlementDone && (
+                          <SelectItem value="customer">Customer</SelectItem>
+                        )}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-xs text-muted-foreground border rounded-md px-3 py-2">
+                    No settlement actions remaining for this booking.
+                  </p>
+                )}
 
-              {settlementTarget === "host" && (
-                <div className="border rounded-md p-3 text-sm space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Host base share</span>
-                    <span>{fmtCurrency(Math.max(0, hostBaseShare))}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Extra fare share (50%)
-                    </span>
-                    <span>{fmtCurrency(hostExtraShare)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Overstay share (50%) @ {fmtCurrency(overstayRatePerHour)}/hr
-                    </span>
-                    <span>
-                      {lateReturnHours > 0
-                        ? `${fmtCurrency(hostLateReturnShare)} (${lateReturnHours} hr${lateReturnHours > 1 ? "s" : ""})`
-                        : fmtCurrency(0)}
-                    </span>
-                  </div>
+                {isHostPayoutPaid && (
+                  <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2">
+                    Host payout is already marked as paid.
+                  </p>
+                )}
+                {isCustomerSettlementDone && (
+                  <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2">
+                    Customer settlement is already completed (
+                    {customerDepositStatus}).
+                  </p>
+                )}
+
+                {settlementTarget === "host" && (
+                  <div className="border rounded-md p-3 text-sm space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Host base share
+                      </span>
+                      <span>{fmtCurrency(Math.max(0, hostBaseShare))}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Extra fare share (50%)
+                      </span>
+                      <span>{fmtCurrency(hostExtraShare)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Overstay share (50%) @{" "}
+                        {fmtCurrency(overstayRatePerHour)}/hr
+                      </span>
+                      <span>
+                        {lateReturnHours > 0
+                          ? `${fmtCurrency(hostLateReturnShare)} (${lateReturnHours} hr${lateReturnHours > 1 ? "s" : ""})`
+                          : fmtCurrency(0)}
+                      </span>
+                    </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">
                         Included distance
                       </span>
                       <span>{includedKm.toFixed(1)} km</span>
+                    </div>
+                    <div className="flex justify-between font-semibold pt-1 border-t mt-1">
+                      <span>Host payout</span>
+                      <span>{fmtCurrency(hostSettlementAmount)}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between font-semibold pt-1 border-t mt-1">
-                    <span>Host payout</span>
-                    <span>{fmtCurrency(hostSettlementAmount)}</span>
-                  </div>
-                </div>
-              )}
+                )}
 
-              {settlementTarget === "customer" && (
-                <div className="border rounded-md p-3 text-sm space-y-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">
-                      Damage / misc charges
-                    </p>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={damageChargeInput}
-                      onChange={(e) => setDamageChargeInput(e.target.value)}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        Extension charge
-                      </span>
-                      <span>{fmtCurrency(extensionCharge)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        Extra distance @ {fmtCurrency(EXTRA_KM_RATE)}/km
-                      </span>
-                      <span>
-                        {fmtCurrency(extraFare)}
-                        {hasDistance ? ` (${extraDistanceKm.toFixed(1)} km)` : ""}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        Overstay @ {fmtCurrency(overstayRatePerHour)}/hr
-                      </span>
-                      <span>
-                        {lateReturnHours > 0
-                          ? `${fmtCurrency(lateReturnCharge)} (${lateReturnHours} hr${lateReturnHours > 1 ? "s" : ""})`
-                          : fmtCurrency(0)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Damage charges</span>
-                      <span>{fmtCurrency(damageCharge)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total charges</span>
-                      <span>{fmtCurrency(customerExtraCharges)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        Paid deposit to adjust
-                      </span>
-                      <span>{fmtCurrency(paidDeposit)}</span>
-                    </div>
-                    {hasTwoWheelerCollateral ? (
-                      <p className="text-xs text-amber-600 pt-1 border-t mt-1">
-                        Two-wheeler collateral detected. Settlement should be
-                        resolved via collateral flow.
+                {settlementTarget === "customer" && (
+                  <div className="border rounded-md p-3 text-sm space-y-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        Damage / misc charges
                       </p>
-                    ) : (
-                      <div className="flex justify-between font-semibold pt-1 border-t mt-1">
-                        <span>
-                          {customerRefundAmount > 0
-                            ? "Refund to customer"
-                            : "Collect from customer"}
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={damageChargeInput}
+                        onChange={(e) => setDamageChargeInput(e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">
+                          Extension charge
+                        </span>
+                        <span>{fmtCurrency(extensionCharge)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">
+                          Extra distance @ {fmtCurrency(EXTRA_KM_RATE)}/km
                         </span>
                         <span>
-                          {fmtCurrency(
-                            customerRefundAmount > 0
-                              ? customerRefundAmount
-                              : customerPayableAmount,
-                          )}
+                          {fmtCurrency(extraFare)}
+                          {hasDistance
+                            ? ` (${extraDistanceKm.toFixed(1)} km)`
+                            : ""}
                         </span>
                       </div>
-                    )}
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">
+                          Overstay @ {fmtCurrency(overstayRatePerHour)}/hr
+                        </span>
+                        <span>
+                          {lateReturnHours > 0
+                            ? `${fmtCurrency(lateReturnCharge)} (${lateReturnHours} hr${lateReturnHours > 1 ? "s" : ""})`
+                            : fmtCurrency(0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">
+                          Damage charges
+                        </span>
+                        <span>{fmtCurrency(damageCharge)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">
+                          Total charges
+                        </span>
+                        <span>{fmtCurrency(customerExtraCharges)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">
+                          Paid deposit to adjust
+                        </span>
+                        <span>{fmtCurrency(paidDeposit)}</span>
+                      </div>
+                      {hasTwoWheelerCollateral ? (
+                        <p className="text-xs text-amber-600 pt-1 border-t mt-1">
+                          Two-wheeler collateral detected. Settlement should be
+                          resolved via collateral flow.
+                        </p>
+                      ) : (
+                        <div className="flex justify-between font-semibold pt-1 border-t mt-1">
+                          <span>
+                            {customerRefundAmount > 0
+                              ? "Refund to customer"
+                              : "Collect from customer"}
+                          </span>
+                          <span>
+                            {fmtCurrency(
+                              customerRefundAmount > 0
+                                ? customerRefundAmount
+                                : customerPayableAmount,
+                            )}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <Button
-                variant="default"
-                className="w-full mt-2"
-                disabled={isSettlementDisabled}
-                onClick={() => processSettlement()}
-              >
-                {settlementStatus === "pending" ? "Processing..." : settlementButtonLabel}
-              </Button>
-            </CardContent>
-          </Card>
+                <Button
+                  variant="default"
+                  className="w-full mt-2"
+                  disabled={isSettlementDisabled}
+                  onClick={() => processSettlement()}
+                >
+                  {settlementStatus === "pending"
+                    ? "Processing..."
+                    : settlementButtonLabel}
+                </Button>
+              </CardContent>
+            </Card>
           )}
 
-                   {!["cancelled", "rejected"].includes(currentStatus) && (
+          {!["cancelled", "rejected"].includes(currentStatus) && (
             <Card>
               <CardContent className="flex flex-col gap-6">
                 <div className="flex flex-col gap-3">
                   <div>
                     <p className="text-sm font-medium">Change car</p>
                   </div>
-                  <Select value={replacementCarId} onValueChange={setReplacementCarId}>
+                  <Select
+                    value={replacementCarId}
+                    onValueChange={setReplacementCarId}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Choose an active replacement car" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
                         {assignableCars
-                          .filter((candidate) => candidate.id !== booking.car_id)
+                          .filter(
+                            (candidate) => candidate.id !== booking.car_id,
+                          )
                           .map((candidate) => (
                             <SelectItem key={candidate.id} value={candidate.id}>
                               {candidate.image_url && (
@@ -1076,10 +1119,14 @@ export default function BookingDetailPage() {
                   </Select>
                   <Button
                     className="w-full"
-                    disabled={!replacementCarId || carChangeStatus === "pending"}
+                    disabled={
+                      !replacementCarId || carChangeStatus === "pending"
+                    }
                     onClick={() => changeCar()}
                   >
-                    {carChangeStatus === "pending" ? "Changing car..." : "Change car"}
+                    {carChangeStatus === "pending"
+                      ? "Changing car..."
+                      : "Change car"}
                   </Button>
                 </div>
               </CardContent>
@@ -1088,7 +1135,6 @@ export default function BookingDetailPage() {
 
           {canDownloadAgreement && (
             <Button
-              variant="outline"
               className="w-full"
               onClick={() => {
                 try {
@@ -1098,9 +1144,7 @@ export default function BookingDetailPage() {
                       name: customer?.full_name ?? booking.customer_name,
                       phone: customer?.phone,
                       email: customer?.email,
-                      drivingLicenseStatus: customerDetails?.dl_verified
-                        ? "Verified"
-                        : "Not verified",
+                      drivingLicenseNumber: customerDetails?.dl_number,
                     },
                     carName: `${brand} ${model}`.trim(),
                     registrationNumber: car?.registration_number,
@@ -1130,7 +1174,6 @@ export default function BookingDetailPage() {
               Download Agreement
             </Button>
           )}
-
         </div>
 
         {/* ── RIGHT MAIN ── */}
@@ -1360,12 +1403,19 @@ export default function BookingDetailPage() {
                 {couponUsageData?.coupon && (
                   <div>
                     <h3 className="text-base font-semibold mb-4 flex items-center gap-2 border-b pb-2">
-                      <Ticket className="w-4 h-4 text-primary"/>
+                      <Ticket className="w-4 h-4 text-primary" />
                       Coupon Applied
                     </h3>
                     <div className="flex items-center gap-3 px-4 py-3">
-                      <span className="text-green-700 text-sm font-bold">{(couponUsageData.coupon as any).code}</span>
-                      <span className="text-sm text-muted-foreground ml-auto">{(couponUsageData.coupon as any).discount_type === "percentage" ? `${(couponUsageData.coupon as any).discount_value}% off` : `₹${(couponUsageData.coupon as any).discount_value} flat off`}</span>
+                      <span className="text-green-700 text-sm font-bold">
+                        {(couponUsageData.coupon as any).code}
+                      </span>
+                      <span className="text-sm text-muted-foreground ml-auto">
+                        {(couponUsageData.coupon as any).discount_type ===
+                        "percentage"
+                          ? `${(couponUsageData.coupon as any).discount_value}% off`
+                          : `₹${(couponUsageData.coupon as any).discount_value} flat off`}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -1447,7 +1497,10 @@ export default function BookingDetailPage() {
                       label="Account Number"
                       value={customerDetails.bank_account_number}
                     />
-                    <Detail label="IFSC Code" value={customerDetails.ifsc_code} />
+                    <Detail
+                      label="IFSC Code"
+                      value={customerDetails.ifsc_code}
+                    />
                   </div>
                 </div>
               </div>

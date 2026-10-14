@@ -17,7 +17,7 @@ type BookingAgreementInput = {
     name?: string | null;
     phone?: string | null;
     email?: string | null;
-    drivingLicenseStatus?: string | null;
+    drivingLicenseNumber?: string | null;
   };
   carName: string;
   registrationNumber?: string | null;
@@ -96,7 +96,7 @@ export function buildBookingAgreementHtml(input: BookingAgreementInput) {
     .section { margin-top:18px; } h2 { margin:0 0 8px; color:${NAVY}; font-size:11px; text-transform:uppercase; border-bottom:1px solid #DCE3F0; padding-bottom:6px; } .columns { display:table; table-layout:fixed; width:100%; } .column { display:table-cell; width:50%; padding-right:14px; vertical-align:top; } .detail-row { display:table; table-layout:fixed; width:100%; padding:4px 0; } .detail-row span { display:table-cell; width:42%; padding-right:12px; color:#64748B; vertical-align:top; } .detail-row strong { display:table-cell; width:58%; text-align:left; vertical-align:top; } .terms { margin:0; padding-left:17px; } .terms li { margin:5px 0; } .proof-link { margin-top:6px; } .proof-link a { color:${BLUE}; text-decoration:underline; } .footer { margin-top:25px; padding-top:10px; border-top:1px solid #DCE3F0; color:#64748B; text-align:center; font-size:9px; }
   </style></head><body>
     <header class="header"><div class="brand-mark">VELOR<span>ENT</span></div><div class="right"><h1>TRIP RENTAL AGREEMENT</h1><div>${escapeHtml(reference)}</div><div>Issued ${escapeHtml(formatDateTime(handoverTime))}</div><span class="status">TRIP STARTED / ONGOING</span></div></header>
-    <section class="section"><h2>Customer details</h2><div class="columns"><div class="column">${detailRow("Name", customer.name)}${detailRow("Phone", customer.phone)}</div><div class="column">${detailRow("Email", customer.email)}${detailRow("Driving licence", customer.drivingLicenseStatus)}</div></div></section>
+    <section class="section"><h2>Customer details</h2><div class="columns"><div class="column">${detailRow("Name", customer.name)}${detailRow("Phone", customer.phone)}</div><div class="column">${detailRow("Email", customer.email)}${detailRow("Driving licence", customer.drivingLicenseNumber)}</div></div></section>
     <section class="section"><h2>Vehicle and trip</h2><div class="columns"><div class="column">${detailRow("Vehicle", input.carName)}${detailRow("Registration", input.registrationNumber)}${detailRow("Host", input.hostName)}${detailRow("Booking ID", booking.id)}</div><div class="column">${detailRow("Rental period", `${formatDateTime(booking.start_time)} to ${formatDateTime(booking.end_time)}`)}${detailRow("Duration", `${booking.total_hours} hours`)}${detailRow("Pickup location", pickupLocation)}</div></div></section>
     <section class="section"><h2>Payment and deposit</h2><div class="columns"><div class="column">${detailRow("Rental amount", formatAmount(booking.base_amount))}${detailRow("Security deposit", formatAmount(booking.deposit_amount))}</div><div class="column">${detailRow("Delivery charge", formatAmount(booking.delivery_amount))}${detailRow("Total paid", formatAmount(booking.total_amount))}</div></div></section>
     <section class="section"><h2>Verified handover record</h2>${detailRow("Handover time", formatDateTime(handoverTime))}${detailRow("Start odometer", `${startOdometer.toLocaleString("en-IN")} km`)}${proofLink("View handover photo", handoverDetails.handover_proof_url)}${proofLink("View odometer photo", handoverDetails.odometer_proof_url)}${proofLink("View customer photo", handoverDetails.customer_photo_url)}</section>
