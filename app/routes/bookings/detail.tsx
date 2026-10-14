@@ -1142,6 +1142,9 @@ export default function BookingDetailPage() {
                     booking,
                     customer: {
                       name: customer?.full_name ?? booking.customer_name,
+                      aadhaarName: customerDetails?.aadhaar_name,
+                      aadhaarNumber: customerDetails?.aadhaar_number,
+                      address: customerDetails?.aadhaar_address,
                       phone: customer?.phone,
                       email: customer?.email,
                       drivingLicenseNumber: customerDetails?.dl_number,

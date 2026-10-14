@@ -15,6 +15,9 @@ type BookingAgreementInput = {
   };
   customer: {
     name?: string | null;
+    aadhaarName?: string | null;
+    aadhaarNumber?: string | null;
+    address?: string | null;
     phone?: string | null;
     email?: string | null;
     drivingLicenseNumber?: string | null;
@@ -56,9 +59,9 @@ function formatAmount(value: number) {
   })}`;
 }
 
-function detailRow(label: string, value: unknown) {
+function detailRow(label: string, value: unknown, wide = false) {
   if (value === null || value === undefined || value === "") return "";
-  return `<div class="detail-row"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
+  return `<div class="detail-row${wide ? " wide-detail-row" : ""}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
 }
 
 function proofLink(label: string, value?: string | null) {
@@ -93,15 +96,15 @@ export function buildBookingAgreementHtml(input: BookingAgreementInput) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"/><title>${buildBookingAgreementFileName(booking.id)}</title><style>
     @page { size: A4; margin: 20mm 16mm; } * { box-sizing: border-box; } body { margin: 0; color: #172033; font-family: Arial, Helvetica, sans-serif; font-size: 11px; line-height: 1.45; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .header { display:table; table-layout:fixed; width:100%; padding-bottom:16px; border-bottom:3px solid ${BLUE}; } .logo,.brand-mark,.right { display:table-cell; vertical-align:middle; } .logo { width:35%; max-width:64px; height:64px; object-fit:contain; } .brand-mark { width:35%; color:${NAVY}; font-size:16px; font-weight:800; letter-spacing:1px; } .brand-mark span { color:${BLUE}; } h1 { margin:0; color:${NAVY}; font-size:23px; } .right { width:65%; text-align:right; color:#64748B; } .status { display:inline-block; margin-top:7px; padding:4px 8px; color:#047857; background:#ECFDF5; border:1px solid #A7F3D0; font-size:10px; font-weight:bold; }
-    .section { margin-top:18px; } h2 { margin:0 0 8px; color:${NAVY}; font-size:11px; text-transform:uppercase; border-bottom:1px solid #DCE3F0; padding-bottom:6px; } .columns { display:table; table-layout:fixed; width:100%; } .column { display:table-cell; width:50%; padding-right:14px; vertical-align:top; } .detail-row { display:table; table-layout:fixed; width:100%; padding:4px 0; } .detail-row span { display:table-cell; width:42%; padding-right:12px; color:#64748B; vertical-align:top; } .detail-row strong { display:table-cell; width:58%; text-align:left; vertical-align:top; } .terms { margin:0; padding-left:17px; } .terms li { margin:5px 0; } .proof-link { margin-top:6px; } .proof-link a { color:${BLUE}; text-decoration:underline; } .footer { margin-top:25px; padding-top:10px; border-top:1px solid #DCE3F0; color:#64748B; text-align:center; font-size:9px; }
+    .section { margin-top:18px; } h2 { margin:0 0 8px; color:${NAVY}; font-size:11px; text-transform:uppercase; border-bottom:1px solid #DCE3F0; padding-bottom:6px; } .columns { display:table; table-layout:fixed; width:100%; } .column { display:table-cell; width:50%; padding-right:14px; vertical-align:top; } .customer-columns .column { width:50%; } .detail-row { display:table; table-layout:fixed; width:100%; padding:4px 0; } .detail-row span { display:table-cell; width:42%; padding-right:12px; color:#64748B; vertical-align:top; } .detail-row strong { display:table-cell; width:58%; text-align:left; vertical-align:top; } .wide-detail-row span { width:18%; } .wide-detail-row strong { width:82%; } .terms { margin:0; padding-left:17px; } .terms li { margin:5px 0; } .proof-links { display:flex; flex-wrap:wrap; gap:16px; margin-top:6px; } .proof-link { margin:0; } .proof-link a { color:${BLUE}; text-decoration:underline; } .footer { margin-top:25px; padding-top:10px; border-top:1px solid #DCE3F0; color:#64748B; text-align:center; font-size:9px; }
   </style></head><body>
     <header class="header"><div class="brand-mark">VELOR<span>ENT</span></div><div class="right"><h1>TRIP LEASE AGREEMENT</h1><div>${escapeHtml(reference)}</div><div>Issued ${escapeHtml(formatDateTime(handoverTime))}</div><span class="status">TRIP STARTED / ONGOING</span></div></header>
-    <section class="section"><h2>Customer details</h2><div class="columns"><div class="column">${detailRow("Name", customer.name)}${detailRow("Phone", customer.phone)}</div><div class="column">${detailRow("Email", customer.email)}${detailRow("Driving licence", customer.drivingLicenseNumber)}</div></div></section>
+    <section class="section"><h2>Customer details</h2><div class="columns customer-columns"><div class="column">${detailRow("Aadhaar Name", customer.aadhaarName || customer.name)}${detailRow("Aadhaar Number", customer.aadhaarNumber)}</div><div class="column">${detailRow("Phone", customer.phone)}${detailRow("Email", customer.email)}</div></div>${detailRow("Driving licence", customer.drivingLicenseNumber, true)}${detailRow("Customer Address", customer.address, true)}</section>
     <section class="section"><h2>Vehicle and trip</h2><div class="columns"><div class="column">${detailRow("Vehicle", input.carName)}${detailRow("Registration", input.registrationNumber)}${detailRow("Host", input.hostName)}${detailRow("Booking ID", booking.id)}</div><div class="column">${detailRow("Rental period", `${formatDateTime(booking.start_time)} to ${formatDateTime(booking.end_time)}`)}${detailRow("Duration", `${booking.total_hours} hours`)}${detailRow("Pickup location", pickupLocation)}</div></div></section>
     <section class="section"><h2>Payment and deposit</h2><div class="columns"><div class="column">${detailRow("Rental amount", formatAmount(booking.base_amount))}${detailRow("Security deposit", formatAmount(booking.deposit_amount))}</div><div class="column">${detailRow("Delivery charge", formatAmount(booking.delivery_amount))}${detailRow("Total paid", formatAmount(booking.total_amount))}</div></div></section>
-    <section class="section"><h2>Verified handover record</h2>${detailRow("Handover time", formatDateTime(handoverTime))}${detailRow("Start odometer", `${startOdometer.toLocaleString("en-IN")} km`)}${proofLink("View handover photo", handoverDetails.handover_proof_url)}${proofLink("View odometer photo", handoverDetails.odometer_proof_url)}${proofLink("View customer photo", handoverDetails.customer_photo_url)}</section>
+    <section class="section"><h2>Verified handover record</h2>${detailRow("Handover time", formatDateTime(handoverTime))}${detailRow("Start odometer", `${startOdometer.toLocaleString("en-IN")} km`)}<div class="proof-links">${proofLink("View handover photo", handoverDetails.handover_proof_url)}${proofLink("View odometer photo", handoverDetails.odometer_proof_url)}${proofLink("View customer photo", handoverDetails.customer_photo_url)}</div></section>
     <section class="section"><h2>Agreement terms</h2><ol class="terms"><li>The customer confirms receipt of the vehicle in the recorded handover condition.</li><li>The customer is responsible for lawful operation, traffic penalties, damage, and return conditions during the rental period.</li><li>Deposit, cancellation, extension, accident, insurance, and dispute terms follow VeloRent policy.</li><li>This agreement takes effect at the verified handover time shown above.</li></ol></section>
-    <section class="section"><h2>Electronic acceptance</h2>${detailRow("Customer", customer.name)}${detailRow("Host", input.hostName)}${detailRow("System record", `OTP-verified handover at ${formatDateTime(handoverTime)}`)}</section>
+    <section class="section"><h2>Electronic acceptance</h2>${detailRow("Customer", customer.aadhaarName || customer.name)}${detailRow("Host", input.hostName)}${detailRow("System record", `OTP-verified handover at ${formatDateTime(handoverTime)}`)}</section>
     <footer class="footer">This is an electronically generated VeloRent trip rental agreement.</footer></body></html>`;
 }
 
